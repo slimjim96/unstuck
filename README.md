@@ -102,6 +102,33 @@ model-set) — the raw material for noticing stalled things later.
 Edges: `kind` = `part_of` (decomposition), `blocks` (dependency),
 `related` (same life area).
 
+## v2 Direction: The Real App (decided 2026-06-10)
+
+The POC becomes a personal daily tool — not a multi-user product. Four
+decisions, made deliberately:
+
+1. **Ambition: personal tool.** One user (the author), several devices.
+   No accounts; at most a shared secret token when it leaves localhost.
+   This keeps the zero-dependency rule alive and honors the success
+   criterion: it must help its own author daily before anything else.
+2. **Order: Focus integration first, persistence second.** Focus stops
+   being an island: it reads the graph, shows the best entry step, and
+   "I did it" writes a `done` operation back — so Trail, witness, and
+   Map all feed each other. Then the graph moves server-side.
+3. **Focus picker: hybrid.** A deterministic client-side selector (open,
+   unblocked, smallest minutes, stalest-cluster bias) picks instantly
+   and free; the model is called only to split, ask, or witness.
+4. **Persistence: snapshot + ops log.** `graph.json` for current state,
+   an append-only ndjson log of every operation (user and AI — one
+   write path: `POST /api/ops`). Crash-safe via atomic rename, zero
+   dependencies, and the op history gives the witness real evidence.
+   Live sync across tabs and devices via SSE (`GET /api/events`),
+   replacing the same-browser-only storage event.
+
+Kept on purpose: no build step, pinned CDN libraries, zero-dep server,
+and the keystone — the graph is the single source of truth, every view
+is a projection.
+
 ## Prototype Scope (v0)
 
 Prove the loop, nothing else:

@@ -4,6 +4,37 @@
 
 ---
 
+## 2026-06-10 (cont. 6) — Architecture decisions for v2 (the real app)
+
+**Branch:** `claude/feat/3d-lens`
+
+### What was done
+- Architecture conversation for POC → real app. Current-state honesty:
+  server already right-shaped (stateless proxy, key server-side);
+  localStorage graph is the fragile core; Focus is an island.
+- Four decisions made by the user (all recommended options accepted),
+  recorded in README → "v2 Direction":
+  1. Personal tool — no accounts, token at most, zero-dep rule lives.
+  2. Focus integration FIRST, then server-side persistence.
+  3. Hybrid Focus picker — deterministic client-side selection, model
+     only for split/ask/witness.
+  4. Snapshot + append-only ops log; one write path (POST /api/ops,
+     same op vocabulary for user and AI); SSE for live sync.
+
+### Next session: Phase 1 — Focus joins the graph
+- Focus reads `unstuck.graph`, deterministic picker (open, unblocked,
+  smallest minutes, stalest-cluster bias), "I did it" → done op +
+  doneAt into the shared graph, "still too big" → /api/graph-step.
+- Shared static `public/assets/app.js|css` for the theme + nav header
+  (4 duplicated copies today; own code, not a dependency — allowed).
+- Phase 2 after: GET /api/graph, POST /api/ops, GET /api/events (SSE),
+  data/graph.json + data/events.ndjson, localStorage → migration source.
+
+### Open items
+- API key rotation STILL pending (day 2 of reminders).
+
+---
+
 ## 2026-06-10 (cont. 5) — Gentle witness + Trail lens (TED roadmap done)
 
 **Branch:** `claude/feat/3d-lens`

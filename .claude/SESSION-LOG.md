@@ -4,6 +4,49 @@
 
 ---
 
+## 2026-06-10 (cont.) — Map inspector: editable "when" date
+
+**Branch:** `claude/feat/3d-lens`
+
+### What was done
+- User feedback after the timeline shipped: "nothing seems editable and
+  there is no when option in the right-hand panel." The lenses being
+  read-only is by design, but the gap was real: the Map's node inspector
+  had no way to set a date, so nothing could reach the timeline except
+  AI-proposed dates.
+- Added a When row to the node inspector (`public/index.html`): native
+  `<input type="date">` (dark `color-scheme`) + "No date" clear button.
+  Set/clear goes through the normal `save()` path → storage event →
+  Timeline/Space live-sync; the model sees the date next turn via the
+  usual state injection. `removeData("when")` on clear so the field
+  disappears from the snapshot rather than going empty-string.
+- Deliberately did NOT auto-flip `mode` to time/mixed when a date is set
+  — the timeline keys on `when` alone; mode stays the model's/user's call.
+
+### Verification (interactive, so screenshot alone wasn't enough)
+- Drove headless Edge over CDP with a throwaway zero-dep Node script
+  (global fetch + WebSocket): seeded localStorage with one node, clicked
+  it (had to use cy.renderedPosition() — cytoscape auto-fits the
+  viewport, model coords are NOT page coords), asserted panel opened,
+  set 2026-06-20 via the input + change event → `when` persisted to
+  `unstuck.graph`, meta line updated; "No date" cleared it. PASS; only
+  console noise is the pre-existing cytoscape wheelSensitivity warning.
+  Script deleted after. Screenshots eyeballed (panel matches theme).
+- Ops: ANOTHER orphaned node was serving :3456 (EADDRINUSE on a fresh
+  start mid-session, despite a clean port check minutes earlier). Used
+  it for the test, then killed it; port verified free. Recurring theme —
+  always check the port owner before starting the server.
+
+### Files touched
+- `public/index.html` — When row in node inspector (only change)
+
+### Open items / next steps
+- Maybe: minutes/detail editing in the inspector if the user wants more
+  fields; timeline → Map node highlight. 3D/timeline eyeball round and
+  API key rotation still pending.
+
+---
+
 ## 2026-06-10 (later still) — Timeline lens: dated nodes on a date axis
 
 **Branch:** `claude/feat/3d-lens`

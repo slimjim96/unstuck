@@ -22,7 +22,8 @@ open http://localhost:3456)
 
 ## Active Branch
 
-`claude/init/todo-new` (update as work progresses)
+`claude/feat/3d-lens` (pushed; holds everything since the Map: lenses,
+witness, Trail, Phase 1 Focus integration)
 
 ## Load-Bearing Files
 

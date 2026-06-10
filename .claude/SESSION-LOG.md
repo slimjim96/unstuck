@@ -4,6 +4,38 @@
 
 ---
 
+## HANDOFF — next session starts here (written 2026-06-10, end of session)
+
+**State:** everything committed and pushed on `claude/feat/3d-lens`
+(51bfe20). Working tree clean. No server left running; user starts
+their own (`node server.js`, needs ANTHROPIC_API_KEY).
+
+**Where the product is:** five lenses on one localStorage graph —
+Map (edit), Focus (graph-integrated card, deterministic picker, done
+write-back), Space (3D), Timeline, Trail (done evidence). Gentle
+witness lives in the graph system prompt. Light/dark via shared
+assets/app.js + app.css.
+
+**Next up: Phase 2 — graph moves server-side** (decided architecture,
+see README "v2 Direction" + cont. 6 entry below):
+- `GET /api/graph`, `POST /api/ops` (op vocabulary = the only write
+  path, user and AI alike), `GET /api/events` (SSE live-sync).
+- Store: `data/graph.json` snapshot (atomic rename) + append-only
+  `data/events.ndjson`. Zero npm deps, Node 22 natives.
+- First connect migrates the browser's `unstuck.graph` up; localStorage
+  becomes a cache. The storage-event sync in the lenses then gets
+  replaced by SSE.
+- Cleanup candidates: `/api/next-step` + SYSTEM_PROMPT in server.js are
+  no longer called by any UI (Focus uses graph-step now).
+
+**Watch items:** model-reply vs picker mismatch in Focus (picker is
+authority; revisit if it grates in dogfooding). Verify any frontend
+change by headless screenshot + console (lesson entries below). Check
+the 3456 port owner before starting servers — orphaned node processes
+recur. **API key rotation still pending (user, since 2026-06-09).**
+
+---
+
 ## 2026-06-10 (cont. 7) — Phase 1 shipped: Focus joins the graph
 
 **Branch:** `claude/feat/3d-lens`

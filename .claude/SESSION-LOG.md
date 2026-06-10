@@ -4,6 +4,51 @@
 
 ---
 
+## 2026-06-10 (cont. 2) — Full node editing + light mode
+
+**Branch:** `claude/feat/3d-lens`
+
+### What was done
+- User asked for (a) everything editable in Map view including title and
+  description, (b) a light UI mode.
+- Map inspector → real editor: Title, Detail, When, Minutes, Type, Mode
+  all editable fields (shared bindField helper; empty optional fields
+  removed via removeData so the model snapshot stays clean; Rename
+  button retired — the Title input replaces it). Done/Split/Delete stay.
+- Light mode on all four pages: `unstuck.theme` in localStorage, toggle
+  button per page, cross-tab sync via storage event, pre-paint head
+  script sets `html.light` to avoid a dark flash. CSS vars overridden
+  under `html.light`; `color-scheme` set per theme (native widgets).
+- Canvas colors are JS-side, so each view swaps a palette: Map calls
+  cy.style().update() (style fns read the palette), Space re-sets the
+  3d-force-graph accessors with FRESH closures (same fn reference would
+  be a no-op for kapsule props), Timeline just re-renders its SVG.
+- Light palette: bg #eef2f5, ink #1c2733, accent #1f9d7e, time #b87b2e,
+  mixed #7263d2, stuck #c45c5c — same hues, darkened for contrast.
+
+### Verification (CDP driver, throwaway script, deleted after)
+- 13/13 assertions, zero console errors: all six fields persist to
+  unstuck.graph; clearing detail removes the key; theme toggle sets
+  html.light + persists; timeline/space/focus pick the theme up from
+  localStorage; toggling on Space repaints WebGL. Screenshots of all
+  four pages in light mode eyeballed — palettes consistent.
+- Driver gotcha: Runtime.evaluate persists top-level `const` across
+  calls in the page session — wrap per-call code in an IIFE.
+- Ops: port 3456 was held by `node server.js` under a plain
+  powershell.exe — the USER's own server, left running (it serves from
+  disk per request, so changes apply on refresh). Check the owner
+  before killing, every time.
+
+### Files touched
+- `public/index.html` — editor fields, theme system, cytoscape palette
+- `public/timeline.html`, `public/space.html`, `public/focus.html` — theme
+
+### Open items / next steps
+- User eyeball: light mode taste pass (palette is my pick), 3D tuning,
+  timeline. API key rotation still pending.
+
+---
+
 ## 2026-06-10 (cont.) — Map inspector: editable "when" date
 
 **Branch:** `claude/feat/3d-lens`

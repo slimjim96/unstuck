@@ -9,7 +9,10 @@
       "PowerShell(Set-Content *)",
       "PowerShell($conn = Get-NetTCPConnection -LocalPort 3456 -State Listen -ErrorAction SilentlyContinue; if \\($conn\\) { $owner = Get-Process -Id $conn.OwningProcess; \"Port 3456 held by PID $\\($owner.Id\\) \\($\\($owner.ProcessName\\)\\), started $\\($owner.StartTime\\)\"; Get-Process node -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process $_ -Force }; \"All node processes stopped.\" } else { \"Port free.\" })",
       "PowerShell(try { $cdn = Invoke-WebRequest \"https://unpkg.com/3d-force-graph@1.79.0/dist/3d-force-graph.min.js\" -Method Head -UseBasicParsing; \"CDN: HTTP $\\($cdn.StatusCode\\), $\\([math]::Round\\($cdn.Headers.'Content-Length'[0]/1kb\\)\\) KB\" } catch { \"CDN pin failed: $\\($_.Exception.Message\\)\" })",
-      "PowerShell(Get-Process *)"
+      "PowerShell(Get-Process *)",
+      "PowerShell($st = \\(Invoke-WebRequest \"https://unpkg.com/three-spritetext@1.10.0/dist/three-spritetext.min.js\" -UseBasicParsing\\).Content; $st.Substring\\(0, 320\\); \"---\"; $fg = \\(Invoke-WebRequest \"https://unpkg.com/3d-force-graph@1.79.0/dist/3d-force-graph.min.js\" -UseBasicParsing\\).Content; $fg.Substring\\(0, 250\\); \"---\"; \"3dfg sets global THREE: $\\($fg -match 'window.THREE|global.THREE=|\\\\.THREE='\\)\")",
+      "PowerShell(Out-Null *)",
+      "PowerShell($p = \\(Invoke-WebRequest \"https://unpkg.com/three-render-objects@1.42.0/package.json\" -UseBasicParsing\\).Content | ConvertFrom-Json; \"three-render-objects wants three: $\\($p.peerDependencies.three\\) $\\($p.dependencies.three\\)\"; $q = \\(Invoke-WebRequest \"https://unpkg.com/3d-force-graph@1.79.0/package.json\" -UseBasicParsing\\).Content | ConvertFrom-Json; \"3d-force-graph wants three: $\\($q.peerDependencies.three\\) $\\($q.dependencies.three\\)\"; $t = \\(Invoke-WebRequest \"https://unpkg.com/three/package.json\" -UseBasicParsing\\).Content | ConvertFrom-Json; \"latest three: $\\($t.version\\)\")"
     ]
   }
 }

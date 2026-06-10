@@ -4,6 +4,45 @@
 
 ---
 
+## 2026-06-10 (later) — Fix: 3D view was blank; ESM + import map rewrite
+
+**Branch:** `claude/feat/3d-lens`
+
+### What was done
+- User reported the 3D view broken (blank scene). Root cause confirmed by
+  inspecting the UMD headers: `three-spritetext` binds to a global `THREE`
+  (`e(t.THREE)`) that the 3d-force-graph standalone bundle never exposes —
+  so `new SpriteText()` threw on the first node render and killed the
+  whole scene. Introduced by the labels commit.
+- Rewrote space.html to ES modules + import map (the library author's own
+  pattern): `three` pinned via esm.sh, both libs imported with
+  `?external=three`, so everything shares ONE three instance.
+- Second bug surfaced by headless testing: three-render-objects@1.42
+  imports `Timer` from three, which requires three >= 0.179 — pinned
+  0.170 failed. Bumped import map to three@0.180.0.
+- Added `?sample=<name>` URL param to space.html — loads a sample map
+  directly (sharable lens + enables headless testing, since a fresh
+  browser profile has no localStorage). storage live-sync only binds in
+  localStorage mode.
+
+### Verification — actually rendered this time
+- Headless Edge (`--headless=new --enable-unsafe-swiftshader`) screenshot
+  of /space.html?sample=build-shed: graph visibly renders — teal/violet
+  nodes, amber blocks arrows, readable sprite labels. Console shows only
+  WebGL perf warnings, no JS errors.
+- Lesson recorded: CDN script tags were "verified" earlier only by HTTP
+  200 — that checks existence, not compatibility. Headless screenshot +
+  console log is now the verification bar for frontend changes.
+
+### Files touched
+- `public/space.html` — full rewrite of the script setup (ESM + import map)
+
+### Open items / next steps
+- 3D visual tuning round with the user against the three samples.
+- Timeline projection; API key rotation still pending.
+
+---
+
 ## 2026-06-10 — Sample maps + 3D labels and tree layout
 
 **Branch:** `claude/feat/3d-lens` (continuing — all "make 3D good" work)

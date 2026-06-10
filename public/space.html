@@ -4,8 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Unstuck — Space</title>
-<script src="https://unpkg.com/3d-force-graph@1.79.0/dist/3d-force-graph.min.js"></script>
-<script src="https://unpkg.com/three-spritetext@1.10.0/dist/three-spritetext.min.js"></script>
+<!-- ESM + import map so 3d-force-graph and three-spritetext share ONE three
+     instance (the UMD builds don't: spritetext binds to a global THREE that
+     the 3d-force-graph bundle never exposes, which blanks the scene). -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://esm.sh/three@0.180.0",
+    "three/": "https://esm.sh/three@0.180.0/"
+  }
+}
+</script>
 <style>
   :root {
     --bg: #10141a; --ink: #e8ecf1; --muted: #8b97a5;
@@ -55,25 +64,47 @@
 
 <p id="hint">drag to orbit · scroll to zoom · click a node to fly to it · edits happen on the Map</p>
 
-<script>
+<script type="module">
+  import ForceGraph3D from "https://esm.sh/3d-force-graph@1.79.0?external=three";
+  import SpriteText from "https://esm.sh/three-spritetext@1.10.0?external=three";
+
   const MODE_COLOR = { step: "#4fc3a1", time: "#d9a05b", mixed: "#9d8cff" };
+  const sampleParam = new URLSearchParams(location.search).get("sample");
+
+  function toData(nodes, edges) {
+    const ids = new Set(nodes.map((n) => n.id));
+    return {
+      nodes,
+      // 3d-force-graph throws on dangling links — drop them defensively
+      links: edges.filter((l) => ids.has(l.source) && ids.has(l.target)),
+    };
+  }
 
   // Same-origin localStorage: the Map page saves cy.elements().jsons() here.
-  function loadGraph() {
+  function loadLocal() {
     const elements = JSON.parse(localStorage.getItem("unstuck.graph") || "[]");
-    const nodes = [], links = [];
+    const nodes = [], edges = [];
     for (const el of elements) {
       const d = el.data || {};
       if (d.source && d.target) {
-        links.push({ source: d.source, target: d.target, kind: d.kind || "part_of" });
+        edges.push({ source: d.source, target: d.target, kind: d.kind || "part_of" });
       } else if (d.id) {
         nodes.push({ id: d.id, label: d.label || d.id, type: d.type, mode: d.mode,
                      minutes: d.minutes, when: d.when, detail: d.detail, status: d.status || "open" });
       }
     }
-    // drop edges whose endpoints are missing — 3d-force-graph throws on dangling links
-    const ids = new Set(nodes.map((n) => n.id));
-    return { nodes, links: links.filter((l) => ids.has(l.source) && ids.has(l.target)) };
+    return toData(nodes, edges);
+  }
+
+  async function loadData() {
+    if (sampleParam) {
+      const res = await fetch("/samples/" + sampleParam + ".json");
+      if (res.ok) {
+        const sample = await res.json();
+        return toData(sample.graph.nodes, sample.graph.edges);
+      }
+    }
+    return loadLocal();
   }
 
   function nodeColor(n) {
@@ -95,7 +126,7 @@
     return bits.join("<br>");
   }
 
-  const data = loadGraph();
+  const data = await loadData();
   document.getElementById("empty").classList.toggle("show", data.nodes.length === 0);
 
   const Graph = ForceGraph3D()(document.getElementById("graph"))
@@ -137,14 +168,17 @@
     e.target.textContent = treeMode ? "Free layout" : "Tree layout";
   });
 
-  // Live-sync: the storage event fires when the Map (in another tab) saves.
-  window.addEventListener("storage", (e) => {
-    if (e.key === "unstuck.graph") {
-      const fresh = loadGraph();
-      document.getElementById("empty").classList.toggle("show", fresh.nodes.length === 0);
-      Graph.graphData(fresh);
-    }
-  });
+  // Live-sync (localStorage mode only): the storage event fires when the
+  // Map, open in another tab, saves.
+  if (!sampleParam) {
+    window.addEventListener("storage", (e) => {
+      if (e.key === "unstuck.graph") {
+        const fresh = loadLocal();
+        document.getElementById("empty").classList.toggle("show", fresh.nodes.length === 0);
+        Graph.graphData(fresh);
+      }
+    });
+  }
 </script>
 </body>
 </html>

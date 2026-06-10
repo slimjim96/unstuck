@@ -77,8 +77,12 @@ visualization is a projection of it.**
   fly to a node. Deliberately a *viewing* lens, not an editing surface —
   it reads the same saved graph and live-syncs when the Map changes.
 - *Timeline view* — date-axis lens (`/timeline.html`): nodes with a `when`
-  land on a horizontal axis with a today marker; overdue things get flagged.
-  Read-only like Space — it reads the same saved graph and live-syncs.
+  land on a horizontal axis with a today marker; passed dates get a calm
+  amber flag. Read-only like Space — same saved graph, live-syncs.
+- *Trail view* — evidence lens (`/trail.html`): everything you've finished,
+  grouped by day, with a cumulative count. The unconscious doesn't believe
+  pep talks; it believes evidence. Anti-streak by design: only days where
+  something happened appear — no gaps, no guilt.
 - *Dependency views* — later projections of the same data.
 
 **The contract: AI proposes, user disposes.** Claude returns graph

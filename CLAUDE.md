@@ -38,6 +38,8 @@ open http://localhost:3456)
 - `public/timeline.html` — the Timeline lens: read-only date axis (hand-
   rolled SVG, no library) for nodes with `when`; same localStorage graph,
   same live-sync, `?sample=` supported.
+- `public/trail.html` — the Trail lens: read-only evidence view of done
+  nodes grouped by `doneAt` day, cumulative count, anti-streak by design.
 - `public/focus.html` — the Focus lens: original one-card-at-a-time UI.
 
 ## Session Reading Order

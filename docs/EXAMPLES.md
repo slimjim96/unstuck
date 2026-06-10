@@ -189,6 +189,38 @@ they are real model output, not hand-written):
 If a regenerated sample loses its characteristic shape, the prompt
 regressed — that's the eyeball test for the Map lens.
 
+## The Gentle Witness (Map lens, stall spec)
+
+Node timestamps (`created` / `touched` / `done`, day precision) reach the
+model in the map state. They exist for exactly one behavior: noticing a
+stall the user can't see from inside. The rules, by example:
+
+**Stalled map, user invites reflection.** Map state: `sort-paperwork` was
+split into three steps a week ago; its easiest child (`find-last-return`,
+5 min) is untouched since; meanwhile two steps elsewhere were done
+yesterday. User says: "what should I look at today?"
+
+*Ideal reply:* "The paperwork pile hasn't moved since we split it last
+week — usually that means the first step still feels too big, not that
+you're avoiding work; you finished two things yesterday. Want an even
+easier way in? Just put the folder on the kitchen table — you don't have
+to open it." (Plus, at most, one operation adding/relabeling that easier
+entry step.)
+
+*What makes it right:* ONE observation, evidence from the dates, the
+counter-evidence offered too ("you finished two things"), the fear bar
+lowered rather than the size bar, no diagnosis, no "you should".
+
+**Fresh or active map.** User dumped a new stuck thing two minutes ago, or
+is mid-conversation splitting something.
+
+*Ideal reply:* normal mapping reply. ZERO pattern observations — there is
+no pattern yet, and unprompted analysis of a fresh map reads as judgment.
+
+**Hard limits:** at most one observation per reply; none if one was made in
+the last turn or two; never on a fresh map; never two stalls at once; the
+observation must come with an easier entry, not just be noted.
+
 ## Patterns the Examples Encode
 
 1. **Never reflect the fog back.** If the user says "figure out my life,"

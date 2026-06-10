@@ -127,6 +127,7 @@
   </select>
   <a href="/space.html">3D →</a>
   <a href="/timeline.html">Timeline →</a>
+  <a href="/trail.html">Trail →</a>
   <a href="/focus.html">Focus mode →</a>
 </div>
 
@@ -251,13 +252,16 @@
     localStorage.setItem("unstuck.messages", JSON.stringify(messages));
   }
 
-  // graph snapshot for the model: data only, no positions
+  // graph snapshot for the model: data only, no positions; timestamps go in
+  // at day precision — evidence for the gentle-witness rule, cheap in tokens
   function snapshot() {
+    const day = (iso) => (iso ? iso.slice(0, 10) : undefined);
     return {
       nodes: cy.nodes().map((n) => {
         const d = n.data();
         return { id: d.id, label: d.label, type: d.type, mode: d.mode,
-                 minutes: d.minutes, when: d.when, detail: d.detail, status: d.status || "open" };
+                 minutes: d.minutes, when: d.when, detail: d.detail, status: d.status || "open",
+                 created: day(d.createdAt), touched: day(d.touchedAt), done: day(d.doneAt) };
       }),
       edges: cy.edges().map((e) => ({ source: e.data("source"), target: e.data("target"), kind: e.data("kind") })),
     };

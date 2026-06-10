@@ -4,35 +4,89 @@
 
 ---
 
-## HANDOFF — next session starts here (written 2026-06-10, end of session)
+## HANDOFF — next session starts here (updated 2026-06-10, Phase 2 done)
 
-**State:** everything committed and pushed on `claude/feat/3d-lens`
-(51bfe20). Working tree clean. No server left running; user starts
-their own (`node server.js`, needs ANTHROPIC_API_KEY).
+**State:** everything committed and pushed on `claude/feat/3d-lens`.
+Working tree clean. No server left running; `data/` deliberately empty
+so the user's browser graph migrates up on their first Map load.
 
-**Where the product is:** five lenses on one localStorage graph —
-Map (edit), Focus (graph-integrated card, deterministic picker, done
-write-back), Space (3D), Timeline, Trail (done evidence). Gentle
-witness lives in the graph system prompt. Light/dark via shared
-assets/app.js + app.css.
+**Where the product is:** the server owns the graph (`data/graph.json`
++ `events.ndjson`, gitignored). POST `/api/ops` is the single write
+path (user edits and AI proposals; server is the only timestamp
+stamper). SSE (`/api/events`) live-syncs all lenses across tabs and
+devices, with own-echo suppression by client id. Old localStorage
+graphs migrate up once (`unstuck.migrated` flag). Five lenses: Map
+(edit→ops), Focus (picker + did-it op), Space/Timeline/Trail (read).
+`/api/next-step` and the v0 focus prompt are gone.
 
-**Next up: Phase 2 — graph moves server-side** (decided architecture,
-see README "v2 Direction" + cont. 6 entry below):
-- `GET /api/graph`, `POST /api/ops` (op vocabulary = the only write
-  path, user and AI alike), `GET /api/events` (SSE live-sync).
-- Store: `data/graph.json` snapshot (atomic rename) + append-only
-  `data/events.ndjson`. Zero npm deps, Node 22 natives.
-- First connect migrates the browser's `unstuck.graph` up; localStorage
-  becomes a cache. The storage-event sync in the lenses then gets
-  replaced by SSE.
-- Cleanup candidates: `/api/next-step` + SYSTEM_PROMPT in server.js are
-  no longer called by any UI (Focus uses graph-step now).
+**Next up: Phase 3 — out of the house** (personal tool, decided):
+- Deploy somewhere reachable (tiny VPS / fly.io / home machine +
+  Tailscale); add the shared secret token at that point (one env var,
+  checked on /api/*; the lenses send it from a stored value).
+- Phone: responsive pass (Map panel + Focus on small screens) + PWA
+  manifest so it installs; SSE already covers cross-device sync.
+- Maybe: ops-log compaction; witness reading real op history from
+  events.ndjson (it currently uses day stamps only).
 
-**Watch items:** model-reply vs picker mismatch in Focus (picker is
-authority; revisit if it grates in dogfooding). Verify any frontend
-change by headless screenshot + console (lesson entries below). Check
-the 3456 port owner before starting servers — orphaned node processes
-recur. **API key rotation still pending (user, since 2026-06-09).**
+**Watch items:** Map applies its own edits locally and ignores its own
+SSE echo — if two clients edit the SAME node simultaneously, last
+write wins (fine for one person). Focus model-reply vs picker mismatch
+(picker is authority). Headless screenshot + console is the frontend
+verification bar; auto-answer JS dialogs in CDP drivers. Check the
+3456 port owner before starting servers. **API key rotation still
+pending (user, since 2026-06-09).**
+
+---
+
+## 2026-06-11 — Phase 2: the graph moves server-side
+
+**Branch:** `claude/feat/3d-lens`
+
+### What was done
+- server.js: canonical graph store (cytoscape element JSON with
+  positions — the user's arrangement is truth). data/graph.json via
+  atomic tmp+rename; append-only data/events.ndjson (one line per
+  commit: t, rev, client, ops/replace). Routes: GET /api/graph,
+  POST /api/ops, PUT /api/graph (replace; stamps anything unstamped),
+  GET /api/events (SSE + 25s heartbeat). commit() = rev++ → save →
+  append → broadcast.
+- Op semantics centralized server-side: server is the ONLY stamper
+  (createdAt/touchedAt/doneAt); `null` field value = explicit clear
+  (client-only channel — the model schema has no nulls); new
+  `move_node` op never bumps touchedAt (arrangement ≠ engagement);
+  add_node carries client-chosen x/y.
+- /api/graph-step now builds the model snapshot from the server graph;
+  clients send only {messages}. /api/next-step + v0 SYSTEM_PROMPT +
+  RESPONSE_SCHEMA deleted (~90 lines).
+- app.js: graph client — loadGraph() (one-time localStorage migration
+  guarded by unstuck.migrated), sendOps(), replaceGraph(),
+  onGraphChange() (EventSource, ignores own clientId echoes).
+- Map: every edit → op (fields incl. null clears, done, delete, add,
+  dragfree → move_node, auto-arrange → batched move_nodes after the
+  layout settles, sample/clear → PUT replace). Model ops rendered
+  locally (placeNear position written INTO the op) then forwarded.
+  localStorage keeps only chat messages + theme.
+- Focus: in-memory server copy refreshed via SSE; did-it → update_node
+  op; capture/split ops forwarded after local render.
+- Space/Timeline/Trail: read server graph, re-render on SSE.
+- .gitignore: data/. README status + CLAUDE.md descriptions updated.
+
+### Verification (two throwaway drivers, both deleted)
+- API-level 17/17: op semantics (stamps, null-clear, move-not-touch,
+  cascade delete), PUT stamping, 400 on bad ops, SSE hello/per-commit
+  broadcast/client ids/replace event, graph.json rev + ndjson line
+  count.
+- Browser CDP 14/14: legacy localStorage migrated up on first Map
+  load (flag set, server has it); inspector title edit → server label
+  + touchedAt; **two-tab SSE: Trail tab live-updated when the Map tab
+  marked a node done**; Focus picked from the server graph and did-it
+  landed server-side; live opus split through Focus — 4 children on
+  the server with server stamps and client positions ("Toss visible
+  trash into bin" card). No console errors anywhere.
+- Test data/ deleted afterwards so real migration starts clean.
+
+### Open items / next steps
+- Phase 3 (see HANDOFF above). API key rotation still pending.
 
 ---
 

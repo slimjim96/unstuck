@@ -4,6 +4,53 @@
 
 ---
 
+## 2026-06-10 (cont. 7) — Phase 1 shipped: Focus joins the graph
+
+**Branch:** `claude/feat/3d-lens`
+
+### What was done
+- **Focus rewritten as a graph projection** (public/focus.html):
+  deterministic picker — candidates are open, type=step, not blocked by
+  an open node ("blocks" semantics: source blocks target); ordered by
+  stalest cluster (max touched across the part_of-root cluster), then
+  smallest minutes, then oldest created. "I did it" writes status=done
+  + doneAt/touchedAt directly into unstuck.graph (no API call; local
+  rotating celebration lines). "Still too big"/capture/answers go
+  through /api/graph-step with the same op vocabulary + stamps as the
+  Map (Focus applyOps mirrors it on raw element JSON; new nodes placed
+  near their parent's saved position, scatter fallback). Conversation
+  is per-visit in-memory only — deliberately NOT shared with the Map's
+  unstuck.messages (clobber risk); the graph itself is the memory.
+- **Shared runtime** public/assets/app.js + app.css: pre-paint theme,
+  Unstuck.palette() (one canvas palette for cytoscape/WebGL/SVG),
+  Unstuck.onThemeChange(), nav injected into <nav data-nav>. All five
+  pages refactored onto it; per-page palettes/theme code deleted.
+- Old /api/next-step + SYSTEM_PROMPT remain in server.js but the UI no
+  longer calls them — candidates for removal in Phase 2.
+
+### Verification (CDP, 18/18 + screenshots, script deleted after)
+- Picker: stalest-cluster pick, blocked-step skip, "Different one"
+  fallback, did-it → doneAt in localStorage, Trail count picks it up,
+  split-offer when nothing bite-sized, empty → capture.
+- Map regression (sample load + inspector), theme via shared nav
+  propagates across Space/Timeline, no console errors anywhere.
+- Live split through Focus (1 opus call): "Clean the home office" →
+  4 children; card showed "Empty trash and recycling (~5 min)". Note:
+  the model's reply suggested a different child than the picker chose
+  (picker = authority per hybrid decision) — watch whether that
+  mismatch bothers in practice; could sort same-minutes children by
+  the model's stated entry point later.
+- Driver gotchas recorded: headless confirm() blocks forever — handle
+  Page.javascriptDialogOpening; a crashed driver leaves an orphaned
+  headless Edge holding the debug port (kill by command-line match).
+
+### Open items / next steps
+- Phase 2: graph server-side (GET /api/graph, POST /api/ops, SSE
+  /api/events, data/graph.json + events.ndjson, localStorage migration).
+- API key rotation STILL pending.
+
+---
+
 ## 2026-06-10 (cont. 6) — Architecture decisions for v2 (the real app)
 
 **Branch:** `claude/feat/3d-lens`

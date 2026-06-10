@@ -1,0 +1,17 @@
+{
+  "project": "todo-new",
+  "ai": "claude",
+  "imported": "2026-06-09",
+  "activeBranch": "claude/init/todo-new",
+  "branches": ["claude/init/todo-new"],
+  "sessionCount": 1,
+  "lastActive": "2026-06-09",
+  "status": "active",
+  "health": {
+    "testsPass": true,
+    "ciGreen": null,
+    "lastChecked": "2026-06-09",
+    "healthCommand": "node --check server.js"
+  },
+  "notes": "Greenfield project (working title: Unstuck). Decomposition engine for stuck things, not a todo app. v0 = zero-dependency Node server + single-page UI proxying to Claude API. Spec lives in docs/EXAMPLES.md."
+}

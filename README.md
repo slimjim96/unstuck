@@ -1,0 +1,79 @@
+# Unstuck (working title)
+
+> A decomposition engine for stuck things — not another todo app.
+
+## Thesis
+
+The bottleneck for getting things done isn't motivation, it's that problems
+arrive too big. "Deal with my finances" isn't an action, it's a fog. Nobody
+can *do* a fog, so the brain files it under "later" and calls that laziness.
+
+Most todo apps assume you already know what to do and just need a place to
+write it down. They're storage for decisions you haven't made yet — which is
+why every abandoned todo list is really a list of undecided things wearing
+task costumes.
+
+This app takes a vague, looming thing and grinds it down until one piece is
+small enough that **doing it is easier than avoiding it.**
+
+## The Core Loop
+
+```
+dump a stuck thought
+        │
+        ▼
+at most two clarifying questions (prefer zero)
+        │
+        ▼
+ONE tiny next action  (5–15 min, physical, concrete)
+        │
+        ├─► "did it"        → celebrate briefly, offer the next one
+        └─► "still too big" → split it again, smaller
+```
+
+## Design Principles
+
+1. **The unit of input is a "stuck thing," not a task.** The capture box
+   accepts full sentences, anxiety and all: "I keep meaning to figure out
+   the garage."
+2. **Show one thing, ever.** A list of 40 items is where motivation goes to
+   die. The home screen shows a single next action. Everything else stays
+   hidden until that one is done or deliberately skipped.
+3. **The app does the thinking; the user does the doing.** The LLM asks at
+   most two clarifying questions, then proposes the smallest first step.
+   Overthinking is the user's job being done badly — outsource it.
+4. **Make "good enough" a button.** Indecision feeds on open options.
+   Offer a default; let the user accept "fine, that one" without guilt.
+   Tone: calm friend, never a productivity drill sergeant.
+5. **Forgiveness is a feature.** No streaks, no red badges. Coming back
+   after two weeks feels like nothing happened: "Welcome back. Here's the
+   smallest thing."
+
+## What Counts as a Valid Next Action
+
+A proposed action MUST be:
+
+- **Physical** — describable as a body doing something ("open your email
+  and search 'tax return 2024'"), never a mental state ("think about",
+  "figure out", "plan", "decide").
+- **Small** — 5–15 minutes, doable today, no prerequisites.
+- **Singular** — one action, no "and then".
+- **Concrete** — a stranger could verify it happened.
+
+## Prototype Scope (v0)
+
+Prove the loop, nothing else:
+
+- Single-page web app, zero frontend dependencies.
+- Tiny Node server (no npm packages — Node 22 native `fetch`) that proxies
+  to the Claude API. Key comes from `ANTHROPIC_API_KEY` env var.
+- No accounts, no database, no persistence beyond the browser tab.
+- Success criterion: the loop helps its own author on real stuck things
+  within a week of dogfooding. If it doesn't, no feature will save it.
+
+## Spec by Example
+
+The real spec lives in [docs/EXAMPLES.md](docs/EXAMPLES.md) — ten real
+stuck-thoughts and the ideal app response for each. Those examples are
+simultaneously the product spec, the prompt-engineering data, and the
+eyeball test cases.

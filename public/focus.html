@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Unstuck</title>
+<script>if (localStorage.getItem("unstuck.theme") === "light") document.documentElement.classList.add("light");</script>
 <style>
   :root {
     --bg: #10141a;
@@ -13,6 +14,19 @@
     --accent: #4fc3a1;
     --accent-soft: rgba(79, 195, 161, 0.12);
     --warn: #d9a05b;
+    --line: #2a3442;
+    color-scheme: dark;
+  }
+  html.light {
+    --bg: #eef2f5;
+    --card: #ffffff;
+    --ink: #1c2733;
+    --muted: #5f6e7d;
+    --accent: #1f9d7e;
+    --accent-soft: rgba(31, 157, 126, 0.12);
+    --warn: #b87b2e;
+    --line: #d4dde4;
+    color-scheme: light;
   }
   * { box-sizing: border-box; }
   body {
@@ -34,7 +48,7 @@
     resize: vertical;
     background: var(--card);
     color: var(--ink);
-    border: 1px solid #2a3442;
+    border: 1px solid var(--line);
     border-radius: 12px;
     padding: 14px 16px;
     font: inherit;
@@ -53,13 +67,14 @@
     color: #0c1116;
     font-weight: 600;
   }
-  button.secondary { background: #2a3442; color: var(--ink); font-weight: 400; }
+  html.light button:not(.secondary) { color: #fff; }
+  button.secondary { background: var(--line); color: var(--ink); font-weight: 400; }
   button:disabled { opacity: 0.45; cursor: wait; }
   .row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
 
   .card {
     background: var(--card);
-    border: 1px solid #2a3442;
+    border: 1px solid var(--line);
     border-radius: 14px;
     padding: 22px 24px;
     margin-top: 1.6rem;
@@ -82,6 +97,8 @@
 </style>
 </head>
 <body>
+<button class="secondary" id="theme"
+  style="position: fixed; top: 14px; right: 16px; font-size: 0.8rem; padding: 5px 12px;">Light</button>
 <main>
   <h1>Unstuck</h1>
   <p class="tagline">Tell it the thing you keep avoiding. Get back one tiny step.</p>
@@ -225,6 +242,19 @@
   $("next-one").addEventListener("click", () =>
     send("Give me the next tiny step."));
   $("done-for-now").addEventListener("click", reset);
+
+  let theme = localStorage.getItem("unstuck.theme") || "dark";
+  function setTheme(t) {
+    theme = t;
+    localStorage.setItem("unstuck.theme", t);
+    document.documentElement.classList.toggle("light", t === "light");
+    $("theme").textContent = t === "light" ? "Dark" : "Light";
+  }
+  $("theme").textContent = theme === "light" ? "Dark" : "Light";
+  $("theme").addEventListener("click", () => setTheme(theme === "light" ? "dark" : "light"));
+  window.addEventListener("storage", (e) => {
+    if (e.key === "unstuck.theme" && e.newValue && e.newValue !== theme) setTheme(e.newValue);
+  });
 </script>
 </body>
 </html>

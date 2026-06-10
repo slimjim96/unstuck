@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Unstuck — Map</title>
+<script>if (localStorage.getItem("unstuck.theme") === "light") document.documentElement.classList.add("light");</script>
 <script src="https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
 <style>
   :root {
@@ -17,6 +18,13 @@
     --mixed: #9d8cff;
     --stuck: #d97b7b;
     --line: #2a3442;
+    color-scheme: dark;
+  }
+  html.light {
+    --bg: #eef2f5; --panel: #f7f9fb; --card: #ffffff; --ink: #1c2733;
+    --muted: #5f6e7d; --accent: #1f9d7e; --time: #b87b2e; --mixed: #7263d2;
+    --stuck: #c45c5c; --line: #d4dde4;
+    color-scheme: light;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
@@ -70,14 +78,17 @@
   #node-label { font-weight: 600; margin-bottom: 2px; }
   #node-meta { color: var(--muted); font-size: 0.82rem; margin-bottom: 8px; }
   #node-box .row { display: flex; gap: 8px; flex-wrap: wrap; }
-  #node-box .when-row { align-items: center; margin-bottom: 8px; }
-  #node-box .when-row label { color: var(--muted); font-size: 0.82rem; }
-  #node-box input[type="date"] {
-    background: var(--card); color: var(--ink); border: 1px solid var(--line);
-    border-radius: 8px; padding: 4px 8px; font: inherit; font-size: 0.82rem;
-    color-scheme: dark;
+  #node-box .fields { margin-bottom: 8px; }
+  #node-box .field {
+    display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 90px;
+    color: var(--muted); font-size: 0.75rem;
   }
-  #node-box input[type="date"]:focus { border-color: var(--accent); outline: none; }
+  #node-box input, #node-box select, #node-box textarea {
+    width: 100%; background: var(--card); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px;
+    font: inherit; font-size: 0.85rem; resize: vertical;
+  }
+  #node-box :is(input, select, textarea):focus { border-color: var(--accent); outline: none; }
 
   #composer { border-top: 1px solid var(--line); padding: 12px 16px 16px; }
   #composer textarea {
@@ -94,6 +105,7 @@
     padding: 8px 14px; cursor: pointer;
     background: var(--accent); color: #0c1116; font-weight: 600;
   }
+  html.light button:not(.secondary):not(.danger) { color: #fff; }
   button.secondary { background: var(--line); color: var(--ink); font-weight: 400; }
   button.danger { background: transparent; color: var(--stuck); font-weight: 400; }
   button:disabled { opacity: 0.45; cursor: wait; }
@@ -106,6 +118,7 @@
   <h1>Unstuck — Map</h1>
   <button class="secondary" id="arrange">Auto-arrange</button>
   <button class="secondary" id="clear">Clear map</button>
+  <button class="secondary" id="theme">Light</button>
   <select id="sample">
     <option value="">Load sample…</option>
     <option value="learn-ai">Learning AI/ML</option>
@@ -131,17 +144,44 @@
   </div>
 
   <div id="node-box">
-    <div id="node-label"></div>
-    <div id="node-meta"></div>
-    <div class="row when-row">
-      <label for="node-when">When</label>
-      <input type="date" id="node-when">
-      <button class="secondary" id="when-clear">No date</button>
+    <div class="row fields">
+      <label class="field">Title
+        <input type="text" id="node-title">
+      </label>
+    </div>
+    <div class="row fields">
+      <label class="field">Detail
+        <textarea id="node-detail" rows="2" placeholder="optional"></textarea>
+      </label>
+    </div>
+    <div class="row fields">
+      <label class="field">When
+        <input type="date" id="node-when">
+      </label>
+      <label class="field">Minutes
+        <input type="number" id="node-minutes" min="1" placeholder="—">
+      </label>
+    </div>
+    <div class="row fields">
+      <label class="field">Type
+        <select id="node-type">
+          <option value="stuck">stuck</option>
+          <option value="task">task</option>
+          <option value="step">step</option>
+          <option value="event">event</option>
+        </select>
+      </label>
+      <label class="field">Mode
+        <select id="node-mode">
+          <option value="step">step-based</option>
+          <option value="time">time-based</option>
+          <option value="mixed">mixed</option>
+        </select>
+      </label>
     </div>
     <div class="row">
       <button id="split">Split smaller</button>
       <button class="secondary" id="toggle-done">Done</button>
-      <button class="secondary" id="rename">Rename</button>
       <button class="danger" id="delete">Delete</button>
     </div>
   </div>
@@ -161,7 +201,16 @@
   let busy = false;
   let selected = null;
 
-  const MODE_COLOR = { step: "#4fc3a1", time: "#d9a05b", mixed: "#9d8cff" };
+  // canvas colors live in JS (cytoscape style), so the theme needs both the
+  // CSS vars (html.light) and this palette swap + cy.style().update()
+  const GRAPH_COLORS = {
+    dark: { step: "#4fc3a1", time: "#d9a05b", mixed: "#9d8cff", stuck: "#d97b7b",
+            plain: "#5a6b7d", ink: "#e8ecf1", edge: "#3a4756", related: "#2f3a48" },
+    light: { step: "#1f9d7e", time: "#b87b2e", mixed: "#7263d2", stuck: "#c45c5c",
+             plain: "#8595a5", ink: "#1c2733", edge: "#b7c2cc", related: "#d4dde4" },
+  };
+  let theme = localStorage.getItem("unstuck.theme") || "dark";
+  let GC = GRAPH_COLORS[theme];
 
   const cy = cytoscape({
     container: $("cy"),
@@ -169,9 +218,9 @@
     wheelSensitivity: 0.25,
     style: [
       { selector: "node", style: {
-          "background-color": (n) => n.data("type") === "stuck" ? "#d97b7b" : (MODE_COLOR[n.data("mode")] || "#5a6b7d"),
+          "background-color": (n) => n.data("type") === "stuck" ? GC.stuck : (GC[n.data("mode")] || GC.plain),
           "label": "data(label)",
-          "color": "#e8ecf1",
+          "color": () => GC.ink,
           "font-size": 11,
           "text-wrap": "wrap",
           "text-max-width": 110,
@@ -182,16 +231,16 @@
           "border-width": 0,
         } },
       { selector: "node[status = 'done']", style: { "opacity": 0.35, "label": (n) => "✓ " + n.data("label") } },
-      { selector: "node:selected", style: { "border-width": 3, "border-color": "#e8ecf1" } },
+      { selector: "node:selected", style: { "border-width": 3, "border-color": () => GC.ink } },
       { selector: "edge", style: {
-          "width": 1.5, "line-color": "#3a4756", "curve-style": "bezier",
+          "width": 1.5, "line-color": () => GC.edge, "curve-style": "bezier",
           "target-arrow-shape": "none",
         } },
       { selector: "edge[kind = 'blocks']", style: {
-          "line-style": "dashed", "line-color": "#d9a05b",
-          "target-arrow-shape": "triangle", "target-arrow-color": "#d9a05b",
+          "line-style": "dashed", "line-color": () => GC.time,
+          "target-arrow-shape": "triangle", "target-arrow-color": () => GC.time,
         } },
-      { selector: "edge[kind = 'related']", style: { "line-style": "dotted", "line-color": "#2f3a48" } },
+      { selector: "edge[kind = 'related']", style: { "line-style": "dotted", "line-color": () => GC.related } },
     ],
   });
 
@@ -293,15 +342,12 @@
   // ---- node selection box ----
   function showNodeBox(n) {
     selected = n;
-    $("node-label").textContent = n.data("label");
-    const bits = [];
-    if (n.data("type")) bits.push(n.data("type"));
-    if (n.data("mode")) bits.push(n.data("mode") + "-based");
-    if (n.data("minutes")) bits.push("~" + n.data("minutes") + " min");
-    if (n.data("when")) bits.push(n.data("when"));
-    if (n.data("detail")) bits.push(n.data("detail"));
-    $("node-meta").textContent = bits.join(" · ");
+    $("node-title").value = n.data("label") || "";
+    $("node-detail").value = n.data("detail") || "";
     $("node-when").value = n.data("when") || "";
+    $("node-minutes").value = n.data("minutes") ?? "";
+    $("node-type").value = n.data("type") || "task";
+    $("node-mode").value = n.data("mode") || "step";
     $("toggle-done").textContent = n.data("status") === "done" ? "Reopen" : "Done";
     $("node-box").classList.add("show");
   }
@@ -324,27 +370,29 @@
     if (selected && !busy)
       send("Split \"" + selected.data("label") + "\" (id: " + selected.id() + ") smaller — it's still too big.");
   });
-  $("node-when").addEventListener("change", () => {
-    if (!selected) return;
-    const v = $("node-when").value;
-    if (v) selected.data("when", v); else selected.removeData("when");
-    showNodeBox(selected); save();
+  // every node field is editable; empty optional fields are removed from the
+  // data so they vanish from the model snapshot instead of going ""
+  function bindField(id, apply) {
+    $(id).addEventListener("change", () => {
+      if (!selected) return;
+      apply(selected, $(id).value.trim());
+      showNodeBox(selected); save();
+    });
+  }
+  bindField("node-title", (n, v) => { if (v) n.data("label", v); });
+  bindField("node-detail", (n, v) => { if (v) n.data("detail", v); else n.removeData("detail"); });
+  bindField("node-when", (n, v) => { if (v) n.data("when", v); else n.removeData("when"); });
+  bindField("node-minutes", (n, v) => {
+    const m = parseInt(v, 10);
+    if (m > 0) n.data("minutes", m); else n.removeData("minutes");
   });
-  $("when-clear").addEventListener("click", () => {
-    if (!selected) return;
-    selected.removeData("when");
-    showNodeBox(selected); save();
-  });
+  bindField("node-type", (n, v) => n.data("type", v));
+  bindField("node-mode", (n, v) => n.data("mode", v));
 
   $("toggle-done").addEventListener("click", () => {
     if (!selected) return;
     selected.data("status", selected.data("status") === "done" ? "open" : "done");
     showNodeBox(selected); save();
-  });
-  $("rename").addEventListener("click", () => {
-    if (!selected) return;
-    const v = prompt("New label:", selected.data("label"));
-    if (v) { selected.data("label", v.trim()); showNodeBox(selected); save(); }
   });
   $("delete").addEventListener("click", () => {
     if (!selected) return;
@@ -388,6 +436,19 @@
     } catch (err) {
       addMsg("err", err.message);
     }
+  });
+
+  function setTheme(t) {
+    theme = t; GC = GRAPH_COLORS[t];
+    localStorage.setItem("unstuck.theme", t);
+    document.documentElement.classList.toggle("light", t === "light");
+    $("theme").textContent = t === "light" ? "Dark" : "Light";
+    cy.style().update(); // re-runs the style functions with the new palette
+  }
+  setTheme(theme);
+  $("theme").addEventListener("click", () => setTheme(theme === "light" ? "dark" : "light"));
+  window.addEventListener("storage", (e) => {
+    if (e.key === "unstuck.theme" && e.newValue && e.newValue !== theme) setTheme(e.newValue);
   });
 
   $("clear").addEventListener("click", () => {

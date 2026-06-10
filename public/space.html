@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Unstuck — Space</title>
+<script>if (localStorage.getItem("unstuck.theme") === "light") document.documentElement.classList.add("light");</script>
 <!-- ESM + import map so 3d-force-graph and three-spritetext share ONE three
      instance (the UMD builds don't: spritetext binds to a global THREE that
      the 3d-force-graph bundle never exposes, which blanks the scene). -->
@@ -19,6 +20,14 @@
   :root {
     --bg: #10141a; --ink: #e8ecf1; --muted: #8b97a5;
     --accent: #4fc3a1; --time: #d9a05b; --mixed: #9d8cff; --stuck: #d97b7b;
+    --btn: #2a3442;
+    color-scheme: dark;
+  }
+  html.light {
+    --bg: #eef2f5; --ink: #1c2733; --muted: #5f6e7d;
+    --accent: #1f9d7e; --time: #b87b2e; --mixed: #7263d2; --stuck: #c45c5c;
+    --btn: #d4dde4;
+    color-scheme: light;
   }
   html, body { height: 100%; margin: 0; }
   body { background: var(--bg); color: var(--ink); font: 15px/1.5 "Segoe UI", system-ui, sans-serif; }
@@ -32,7 +41,7 @@
   #topbar a:hover { color: var(--accent); }
   #topbar button {
     font: inherit; font-size: 0.8rem; border: 0; border-radius: 8px;
-    padding: 5px 12px; cursor: pointer; background: #2a3442; color: var(--ink);
+    padding: 5px 12px; cursor: pointer; background: var(--btn); color: var(--ink);
   }
   #hint {
     position: absolute; bottom: 14px; left: 16px; z-index: 5;
@@ -56,6 +65,7 @@
   <a href="/timeline.html">Timeline</a>
   <a href="/focus.html">Focus mode</a>
   <button id="layout-mode">Tree layout</button>
+  <button id="theme">Light</button>
 </div>
 
 <div id="empty">
@@ -69,7 +79,18 @@
   import ForceGraph3D from "https://esm.sh/3d-force-graph@1.79.0?external=three";
   import SpriteText from "https://esm.sh/three-spritetext@1.10.0?external=three";
 
-  const MODE_COLOR = { step: "#4fc3a1", time: "#d9a05b", mixed: "#9d8cff" };
+  // WebGL colors are set via accessors, so light mode needs a palette swap +
+  // re-setting the accessors (fresh closures force a repaint)
+  const PALETTES = {
+    dark: { bg: "#10141a", step: "#4fc3a1", time: "#d9a05b", mixed: "#9d8cff",
+            stuck: "#d97b7b", plain: "#5a6b7d", done: "#3a4756", label: "#e8ecf1",
+            labelDone: "#5a6b7d", related: "#2f3a48", edge: "#3a4756" },
+    light: { bg: "#eef2f5", step: "#1f9d7e", time: "#b87b2e", mixed: "#7263d2",
+             stuck: "#c45c5c", plain: "#8595a5", done: "#c2ccd6", label: "#1c2733",
+             labelDone: "#8595a5", related: "#cdd8e0", edge: "#aab6c2" },
+  };
+  let theme = localStorage.getItem("unstuck.theme") || "dark";
+  const P = () => PALETTES[theme];
   const sampleParam = new URLSearchParams(location.search).get("sample");
 
   function toData(nodes, edges) {
@@ -109,9 +130,21 @@
   }
 
   function nodeColor(n) {
-    if (n.status === "done") return "#3a4756";
-    if (n.type === "stuck") return "#d97b7b";
-    return MODE_COLOR[n.mode] || "#5a6b7d";
+    if (n.status === "done") return P().done;
+    if (n.type === "stuck") return P().stuck;
+    return P()[n.mode] || P().plain;
+  }
+
+  function makeLabel(n) {
+    const sprite = new SpriteText(n.status === "done" ? "✓ " + n.label : n.label);
+    sprite.color = n.status === "done" ? P().labelDone : P().label;
+    sprite.textHeight = n.type === "stuck" || n.type === "task" ? 4 : 2.6;
+    sprite.position.y = n.type === "stuck" || n.type === "task" ? -8 : -5;
+    return sprite;
+  }
+
+  function linkColor(l) {
+    return l.kind === "blocks" ? P().time : l.kind === "related" ? P().related : P().edge;
   }
 
   function nodeTooltip(n) {
@@ -131,23 +164,17 @@
   document.getElementById("empty").classList.toggle("show", data.nodes.length === 0);
 
   const Graph = ForceGraph3D()(document.getElementById("graph"))
-    .backgroundColor("#10141a")
+    .backgroundColor(P().bg)
     .graphData(data)
     .nodeLabel(nodeTooltip)
-    .nodeColor(nodeColor)
+    .nodeColor((n) => nodeColor(n))
     .nodeVal((n) => (n.type === "stuck" || n.type === "task" ? 6 : 2))
     .nodeOpacity(0.92)
     // visible labels: text sprite rendered alongside the sphere
-    .nodeThreeObject((n) => {
-      const sprite = new SpriteText(n.status === "done" ? "✓ " + n.label : n.label);
-      sprite.color = n.status === "done" ? "#5a6b7d" : "#e8ecf1";
-      sprite.textHeight = n.type === "stuck" || n.type === "task" ? 4 : 2.6;
-      sprite.position.y = n.type === "stuck" || n.type === "task" ? -8 : -5;
-      return sprite;
-    })
+    .nodeThreeObject((n) => makeLabel(n))
     .nodeThreeObjectExtend(true)
     .onDagError(() => {}) // tolerate cycles from 'related'/'blocks' edges in tree mode
-    .linkColor((l) => (l.kind === "blocks" ? "#d9a05b" : l.kind === "related" ? "#2f3a48" : "#3a4756"))
+    .linkColor((l) => linkColor(l))
     .linkWidth((l) => (l.kind === "blocks" ? 1.5 : 0.8))
     .linkDirectionalArrowLength((l) => (l.kind === "blocks" ? 4 : 0))
     .linkDirectionalArrowRelPos(0.9)
@@ -160,6 +187,24 @@
         { x: node.x * ratio, y: node.y * ratio, z: node.z * ratio },
         node, 900);
     });
+
+  function setTheme(t) {
+    theme = t;
+    localStorage.setItem("unstuck.theme", t);
+    document.documentElement.classList.toggle("light", t === "light");
+    document.getElementById("theme").textContent = t === "light" ? "Dark" : "Light";
+    // fresh closures so the kapsule props register a change and repaint
+    Graph.backgroundColor(P().bg)
+      .nodeColor((n) => nodeColor(n))
+      .nodeThreeObject((n) => makeLabel(n))
+      .linkColor((l) => linkColor(l));
+  }
+  document.getElementById("theme").textContent = theme === "light" ? "Dark" : "Light";
+  document.getElementById("theme").addEventListener("click",
+    () => setTheme(theme === "light" ? "dark" : "light"));
+  window.addEventListener("storage", (e) => {
+    if (e.key === "unstuck.theme" && e.newValue && e.newValue !== theme) setTheme(e.newValue);
+  });
 
   // Tree layout: arrange the part_of hierarchy top-down; toggle back to free.
   let treeMode = false;

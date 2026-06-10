@@ -4,11 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Unstuck — Timeline</title>
+<script>if (localStorage.getItem("unstuck.theme") === "light") document.documentElement.classList.add("light");</script>
 <style>
   :root {
     --bg: #10141a; --ink: #e8ecf1; --muted: #8b97a5;
     --accent: #4fc3a1; --time: #d9a05b; --mixed: #9d8cff; --stuck: #d97b7b;
     --line: #2a3442;
+    color-scheme: dark;
+  }
+  html.light {
+    --bg: #eef2f5; --ink: #1c2733; --muted: #5f6e7d;
+    --accent: #1f9d7e; --time: #b87b2e; --mixed: #7263d2; --stuck: #c45c5c;
+    --line: #d4dde4;
+    color-scheme: light;
   }
   html, body { height: 100%; margin: 0; }
   body { background: var(--bg); color: var(--ink); font: 15px/1.5 "Segoe UI", system-ui, sans-serif; }
@@ -20,6 +28,10 @@
   #topbar h1 { font-size: 1.05rem; font-weight: 600; margin: 0; }
   #topbar a { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
   #topbar a:hover { color: var(--accent); }
+  #topbar button {
+    font: inherit; font-size: 0.8rem; border: 0; border-radius: 8px;
+    padding: 5px 12px; cursor: pointer; background: var(--line); color: var(--ink);
+  }
   #hint {
     position: absolute; bottom: 14px; left: 16px; z-index: 5;
     color: var(--muted); font-size: 0.78rem;
@@ -41,6 +53,7 @@
   <a href="/">← Map (editing)</a>
   <a href="/space.html">Space (3D)</a>
   <a href="/focus.html">Focus mode</a>
+  <button id="theme">Light</button>
 </div>
 
 <div id="empty">
@@ -51,7 +64,20 @@
 <p id="hint">dated things land on the axis · edits happen on the Map</p>
 
 <script>
-  const MODE_COLOR = { step: "#4fc3a1", time: "#d9a05b", mixed: "#9d8cff" };
+  // SVG colors are set per-element, so light mode needs a palette swap +
+  // re-render, not just the CSS vars
+  const PALETTES = {
+    dark: { step: "#4fc3a1", time: "#d9a05b", mixed: "#9d8cff", stuck: "#d97b7b",
+            plain: "#5a6b7d", done: "#3a4756", axis: "#3a4756", tick: "#8b97a5",
+            today: "#4fc3a1", stem: "#2a3442", label: "#e8ecf1", labelDone: "#8b97a5",
+            meta: "#8b97a5", overdue: "#d97b7b" },
+    light: { step: "#1f9d7e", time: "#b87b2e", mixed: "#7263d2", stuck: "#c45c5c",
+             plain: "#8595a5", done: "#c2ccd6", axis: "#b7c2cc", tick: "#5f6e7d",
+             today: "#1f9d7e", stem: "#d4dde4", label: "#1c2733", labelDone: "#8595a5",
+             meta: "#5f6e7d", overdue: "#c45c5c" },
+  };
+  let theme = localStorage.getItem("unstuck.theme") || "dark";
+  const P = () => PALETTES[theme];
   const DAY = 86400000;
   const sampleParam = new URLSearchParams(location.search).get("sample");
   const svgNS = "http://www.w3.org/2000/svg";
@@ -99,9 +125,9 @@
   }
 
   function nodeColor(n) {
-    if (n.status === "done") return "#3a4756";
-    if (n.type === "stuck") return "#d97b7b";
-    return MODE_COLOR[n.mode] || "#5a6b7d";
+    if (n.status === "done") return P().done;
+    if (n.type === "stuck") return P().stuck;
+    return P()[n.mode] || P().plain;
   }
 
   const fmtDay = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -165,19 +191,19 @@
 
     // axis + ticks
     svg.appendChild(el("line", { x1: mx, y1: axisY, x2: W - mx, y2: axisY,
-      stroke: "#3a4756", "stroke-width": 1.5 }));
+      stroke: P().axis, "stroke-width": 1.5 }));
     for (const tk of ticks(t0, t1)) {
       const x = X(tk.t);
-      svg.appendChild(el("line", { x1: x, y1: axisY - 4, x2: x, y2: axisY + 4, stroke: "#3a4756" }));
-      svg.appendChild(el("text", { x, y: axisY + 20, fill: "#8b97a5", "font-size": 10.5,
+      svg.appendChild(el("line", { x1: x, y1: axisY - 4, x2: x, y2: axisY + 4, stroke: P().axis }));
+      svg.appendChild(el("text", { x, y: axisY + 20, fill: P().tick, "font-size": 10.5,
         "text-anchor": "middle" }, tk.label));
     }
 
     // today marker
     const tx = X(today);
     svg.appendChild(el("line", { x1: tx, y1: H * 0.16, x2: tx, y2: H * 0.88,
-      stroke: "#4fc3a1", "stroke-width": 1, "stroke-dasharray": "4 5", opacity: 0.55 }));
-    svg.appendChild(el("text", { x: tx, y: H * 0.16 - 8, fill: "#4fc3a1", "font-size": 11,
+      stroke: P().today, "stroke-width": 1, "stroke-dasharray": "4 5", opacity: 0.55 }));
+    svg.appendChild(el("text", { x: tx, y: H * 0.16 - 8, fill: P().today, "font-size": 11,
       "text-anchor": "middle" }, "today"));
 
     // place items: alternate above/below the axis, bump to the next level
@@ -208,19 +234,33 @@
       const yDot = it._side === "up" ? axisY - off : axisY + off;
       const g = el("g", { opacity: it.status === "done" ? 0.55 : 1 });
       g.appendChild(el("line", { x1: it._x, y1: axisY, x2: it._x, y2: yDot,
-        stroke: "#2a3442", "stroke-width": 1 }));
+        stroke: P().stem, "stroke-width": 1 }));
       const dot = el("circle", { cx: it._x, cy: yDot, r: big ? 8 : 5.5, fill: nodeColor(it) });
-      if (it._overdue) { dot.setAttribute("stroke", "#d97b7b"); dot.setAttribute("stroke-width", 2); }
+      if (it._overdue) { dot.setAttribute("stroke", P().overdue); dot.setAttribute("stroke-width", 2); }
       const tip = [it.label, it._meta, it.detail].filter(Boolean).join("\n");
       dot.appendChild(el("title", {}, tip));
       g.appendChild(dot);
       g.appendChild(el("text", { x: it._x, y: yDot + (big ? 24 : 21), "text-anchor": "middle",
-        fill: it.status === "done" ? "#8b97a5" : "#e8ecf1", "font-size": 11.5 }, it._label));
+        fill: it.status === "done" ? P().labelDone : P().label, "font-size": 11.5 }, it._label));
       g.appendChild(el("text", { x: it._x, y: yDot + (big ? 39 : 36), "text-anchor": "middle",
-        fill: it._overdue ? "#d97b7b" : "#8b97a5", "font-size": 10 }, it._meta));
+        fill: it._overdue ? P().overdue : P().meta, "font-size": 10 }, it._meta));
       svg.appendChild(g);
     }
   }
+
+  function setTheme(t) {
+    theme = t;
+    localStorage.setItem("unstuck.theme", t);
+    document.documentElement.classList.toggle("light", t === "light");
+    document.getElementById("theme").textContent = t === "light" ? "Dark" : "Light";
+    render();
+  }
+  document.getElementById("theme").textContent = theme === "light" ? "Dark" : "Light";
+  document.getElementById("theme").addEventListener("click",
+    () => setTheme(theme === "light" ? "dark" : "light"));
+  window.addEventListener("storage", (e) => {
+    if (e.key === "unstuck.theme" && e.newValue && e.newValue !== theme) setTheme(e.newValue);
+  });
 
   loadData().then((d) => { data = d; render(); });
 

@@ -38,6 +38,36 @@ pending (user, since 2026-06-09).**
 
 ---
 
+## 2026-06-11 (later) — Fix: top-left map after Phase 2; dbl-click centering
+
+**Branch:** `claude/feat/3d-lens`
+
+### What was done
+- User dogfooding report: map "moved randomly, stuck in the upper-left."
+  Root cause: Phase 2 made the graph load ASYNC (cy starts empty, adds
+  elements later) — cytoscape only auto-fits constructor-time elements,
+  so the viewport stayed at default pan/zoom. Fix: explicit cy.fit()
+  once the elements arrive.
+- Requested feature: double-click (two taps, same target, <350ms,
+  manual detection — not relying on cytoscape dbltap) → node/edge
+  animates to viewport center; double-click on empty canvas → fit the
+  whole map.
+- server.js: UNSTUCK_DATA env var overrides the data dir — needed
+  because the user now has REAL data in data/ (rev 2, 26 elements);
+  tests must run isolated (PORT=3457 + temp UNSTUCK_DATA). Also handy
+  for Phase 3 deploys.
+
+### Verification (CDP vs isolated server, script deleted)
+- 3/3: nodes seeded at (5000,4000) visible after load (fit), dbl-click
+  centers to within 12px, canvas dbl-click fits all. No console errors.
+- User's real data/graph.json verified untouched after tests.
+
+### Lesson
+- The user has live data now: NEVER run tests against the default
+  data/ or port 3456 without checking; always UNSTUCK_DATA + alt port.
+
+---
+
 ## 2026-06-11 — Phase 2: the graph moves server-side
 
 **Branch:** `claude/feat/3d-lens`

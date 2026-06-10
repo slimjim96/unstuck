@@ -1,0 +1,264 @@
+{
+  "name": "Building a shed",
+  "graph": {
+    "nodes": [
+      {
+        "id": "build-shed",
+        "label": "Build backyard storage shed",
+        "type": "task",
+        "mode": "mixed",
+        "detail": "A storage shed in the backyard this summer.",
+        "status": "open"
+      },
+      {
+        "id": "permits",
+        "label": "Get shed permits",
+        "type": "task",
+        "mode": "mixed",
+        "detail": "Confirm local rules and file any required permit.",
+        "status": "open"
+      },
+      {
+        "id": "concrete-slab",
+        "label": "Pour concrete slab",
+        "type": "task",
+        "mode": "step",
+        "detail": "Build the foundation the shed sits on.",
+        "status": "open"
+      },
+      {
+        "id": "materials",
+        "label": "Buy materials",
+        "type": "task",
+        "mode": "step",
+        "detail": "Source lumber, fasteners, and roofing.",
+        "status": "open"
+      },
+      {
+        "id": "framing",
+        "label": "Frame and build shed",
+        "type": "task",
+        "mode": "step",
+        "detail": "Frame walls, roof, and finish the structure.",
+        "status": "open"
+      },
+      {
+        "id": "slab-mark-footprint",
+        "label": "Stake out slab footprint",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Mark the slab corners with stakes and string.",
+        "status": "open"
+      },
+      {
+        "id": "slab-excavate",
+        "label": "Excavate and level ground",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Dig out and level the slab area.",
+        "status": "open"
+      },
+      {
+        "id": "slab-build-forms",
+        "label": "Build form frame",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Set wood forms around the slab perimeter.",
+        "status": "open"
+      },
+      {
+        "id": "slab-add-gravel",
+        "label": "Lay gravel base",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Spread and tamp gravel inside the forms.",
+        "status": "open"
+      },
+      {
+        "id": "slab-pour",
+        "label": "Pour and screed concrete",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Pour the concrete and screed it level.",
+        "status": "open"
+      },
+      {
+        "id": "frame-floor",
+        "label": "Build floor platform",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Anchor and build the floor frame on the slab.",
+        "status": "open"
+      },
+      {
+        "id": "frame-walls",
+        "label": "Frame wall sections",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Assemble the wall frames flat on the deck.",
+        "status": "open"
+      },
+      {
+        "id": "frame-raise-walls",
+        "label": "Raise and fasten walls",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Stand walls up and fasten them together.",
+        "status": "open"
+      },
+      {
+        "id": "frame-roof",
+        "label": "Frame roof rafters",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Set and fasten the roof rafters.",
+        "status": "open"
+      },
+      {
+        "id": "frame-sheath",
+        "label": "Sheath and roof shed",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Add sheathing, roofing, and siding.",
+        "status": "open"
+      }
+    ],
+    "edges": [
+      {
+        "source": "permits",
+        "target": "build-shed",
+        "kind": "part_of"
+      },
+      {
+        "source": "concrete-slab",
+        "target": "build-shed",
+        "kind": "part_of"
+      },
+      {
+        "source": "materials",
+        "target": "build-shed",
+        "kind": "part_of"
+      },
+      {
+        "source": "framing",
+        "target": "build-shed",
+        "kind": "part_of"
+      },
+      {
+        "source": "permits",
+        "target": "concrete-slab",
+        "kind": "blocks"
+      },
+      {
+        "source": "concrete-slab",
+        "target": "framing",
+        "kind": "blocks"
+      },
+      {
+        "source": "materials",
+        "target": "framing",
+        "kind": "blocks"
+      },
+      {
+        "source": "slab-mark-footprint",
+        "target": "concrete-slab",
+        "kind": "part_of"
+      },
+      {
+        "source": "slab-excavate",
+        "target": "concrete-slab",
+        "kind": "part_of"
+      },
+      {
+        "source": "slab-build-forms",
+        "target": "concrete-slab",
+        "kind": "part_of"
+      },
+      {
+        "source": "slab-add-gravel",
+        "target": "concrete-slab",
+        "kind": "part_of"
+      },
+      {
+        "source": "slab-pour",
+        "target": "concrete-slab",
+        "kind": "part_of"
+      },
+      {
+        "source": "slab-mark-footprint",
+        "target": "slab-excavate",
+        "kind": "blocks"
+      },
+      {
+        "source": "slab-excavate",
+        "target": "slab-build-forms",
+        "kind": "blocks"
+      },
+      {
+        "source": "slab-build-forms",
+        "target": "slab-add-gravel",
+        "kind": "blocks"
+      },
+      {
+        "source": "slab-add-gravel",
+        "target": "slab-pour",
+        "kind": "blocks"
+      },
+      {
+        "source": "frame-floor",
+        "target": "framing",
+        "kind": "part_of"
+      },
+      {
+        "source": "frame-walls",
+        "target": "framing",
+        "kind": "part_of"
+      },
+      {
+        "source": "frame-raise-walls",
+        "target": "framing",
+        "kind": "part_of"
+      },
+      {
+        "source": "frame-roof",
+        "target": "framing",
+        "kind": "part_of"
+      },
+      {
+        "source": "frame-sheath",
+        "target": "framing",
+        "kind": "part_of"
+      },
+      {
+        "source": "frame-floor",
+        "target": "frame-walls",
+        "kind": "blocks"
+      },
+      {
+        "source": "frame-walls",
+        "target": "frame-raise-walls",
+        "kind": "blocks"
+      },
+      {
+        "source": "frame-raise-walls",
+        "target": "frame-roof",
+        "kind": "blocks"
+      },
+      {
+        "source": "frame-roof",
+        "target": "frame-sheath",
+        "kind": "blocks"
+      }
+    ]
+  }
+}

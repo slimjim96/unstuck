@@ -1,0 +1,182 @@
+{
+  "name": "Learning AI/ML",
+  "graph": {
+    "nodes": [
+      {
+        "id": "ai-ml-engineering",
+        "label": "Get into AI/ML engineering",
+        "type": "task",
+        "mode": "step",
+        "detail": "Transition from dev into AI/ML engineering.",
+        "status": "open"
+      },
+      {
+        "id": "pick-one-course",
+        "label": "Pick one starter course",
+        "type": "step",
+        "mode": "step",
+        "minutes": 10,
+        "detail": "Open one well-known ML course (e.g. fast.ai) and bookmark lesson 1.",
+        "status": "open"
+      },
+      {
+        "id": "watch-first-lesson",
+        "label": "Watch first lesson",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Watch the first 15 minutes of lesson 1, no notes required.",
+        "status": "open"
+      },
+      {
+        "id": "run-hello-model",
+        "label": "Run a hello-world model",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Open a Colab notebook and run one pre-written model end to end.",
+        "status": "open"
+      },
+      {
+        "id": "math-foundations",
+        "label": "Math foundations",
+        "type": "task",
+        "mode": "step",
+        "detail": "Just enough linear algebra and calculus to read ML material.",
+        "status": "open"
+      },
+      {
+        "id": "practical-frameworks",
+        "label": "Practical frameworks",
+        "type": "task",
+        "mode": "step",
+        "detail": "Hands-on with PyTorch and the everyday ML stack.",
+        "status": "open"
+      },
+      {
+        "id": "reading-papers",
+        "label": "Reading papers",
+        "type": "task",
+        "mode": "step",
+        "detail": "Build the habit of reading ML papers without drowning.",
+        "status": "open"
+      },
+      {
+        "id": "building-agents",
+        "label": "Building agents",
+        "type": "task",
+        "mode": "step",
+        "detail": "Wire up LLM-based agents once fundamentals are in place.",
+        "status": "open"
+      },
+      {
+        "id": "watch-linalg-video",
+        "label": "Watch one linear algebra video",
+        "type": "step",
+        "mode": "step",
+        "minutes": 12,
+        "detail": "Watch one 12-min video on vectors and matrices, no notes.",
+        "status": "open"
+      },
+      {
+        "id": "pytorch-tensor-tutorial",
+        "label": "Run PyTorch tensor tutorial",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Run the official PyTorch tensor tutorial cell by cell.",
+        "status": "open"
+      },
+      {
+        "id": "read-one-abstract",
+        "label": "Read one paper abstract",
+        "type": "step",
+        "mode": "step",
+        "minutes": 10,
+        "detail": "Read just the abstract of 'Attention Is All You Need'.",
+        "status": "open"
+      },
+      {
+        "id": "run-agent-quickstart",
+        "label": "Run an agent quickstart",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Run the smallest LangChain (or similar) quickstart example.",
+        "status": "open"
+      }
+    ],
+    "edges": [
+      {
+        "source": "pick-one-course",
+        "target": "ai-ml-engineering",
+        "kind": "part_of"
+      },
+      {
+        "source": "watch-first-lesson",
+        "target": "ai-ml-engineering",
+        "kind": "part_of"
+      },
+      {
+        "source": "run-hello-model",
+        "target": "ai-ml-engineering",
+        "kind": "part_of"
+      },
+      {
+        "source": "pick-one-course",
+        "target": "watch-first-lesson",
+        "kind": "blocks"
+      },
+      {
+        "source": "math-foundations",
+        "target": "ai-ml-engineering",
+        "kind": "part_of"
+      },
+      {
+        "source": "practical-frameworks",
+        "target": "ai-ml-engineering",
+        "kind": "part_of"
+      },
+      {
+        "source": "reading-papers",
+        "target": "ai-ml-engineering",
+        "kind": "part_of"
+      },
+      {
+        "source": "building-agents",
+        "target": "ai-ml-engineering",
+        "kind": "part_of"
+      },
+      {
+        "source": "watch-linalg-video",
+        "target": "math-foundations",
+        "kind": "part_of"
+      },
+      {
+        "source": "pytorch-tensor-tutorial",
+        "target": "practical-frameworks",
+        "kind": "part_of"
+      },
+      {
+        "source": "read-one-abstract",
+        "target": "reading-papers",
+        "kind": "part_of"
+      },
+      {
+        "source": "run-agent-quickstart",
+        "target": "building-agents",
+        "kind": "part_of"
+      },
+      {
+        "source": "watch-linalg-video",
+        "target": "read-one-abstract",
+        "kind": "blocks"
+      },
+      {
+        "source": "pytorch-tensor-tutorial",
+        "target": "run-agent-quickstart",
+        "kind": "blocks"
+      }
+    ]
+  }
+}

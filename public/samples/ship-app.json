@@ -1,0 +1,159 @@
+{
+  "name": "Shipping a side project",
+  "graph": {
+    "nodes": [
+      {
+        "id": "web-app-project",
+        "label": "Ship web app side project",
+        "type": "stuck",
+        "mode": "mixed",
+        "detail": "A small web app that's been stuck in a phone note for over a year.",
+        "status": "open"
+      },
+      {
+        "id": "pick-one-idea",
+        "label": "Pick one idea",
+        "type": "step",
+        "mode": "step",
+        "minutes": 10,
+        "detail": "Open the phone note and circle the single idea you'll build first.",
+        "status": "open"
+      },
+      {
+        "id": "write-one-sentence",
+        "label": "Write what it does",
+        "type": "step",
+        "mode": "step",
+        "minutes": 10,
+        "detail": "Write one sentence describing what the app does for one user.",
+        "status": "open"
+      },
+      {
+        "id": "list-core-screen",
+        "label": "Sketch the main screen",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "On paper, draw the single most important screen of the app.",
+        "status": "open"
+      },
+      {
+        "id": "create-empty-repo",
+        "label": "Create empty repo",
+        "type": "step",
+        "mode": "step",
+        "minutes": 10,
+        "detail": "Make a new empty git repository for the project.",
+        "status": "open"
+      },
+      {
+        "id": "build-first-screen",
+        "label": "Code the main screen",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Turn your paper sketch into a single static page in the repo.",
+        "status": "open"
+      },
+      {
+        "id": "wire-core-feature",
+        "label": "Wire up one feature",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Make the single most important feature actually work end to end.",
+        "status": "open"
+      },
+      {
+        "id": "deploy-free-host",
+        "label": "Deploy to a free host",
+        "type": "step",
+        "mode": "step",
+        "minutes": 15,
+        "detail": "Push the app live on a free host like Vercel or Netlify.",
+        "status": "open"
+      },
+      {
+        "id": "ship-deadline",
+        "label": "Ship date",
+        "type": "event",
+        "mode": "time",
+        "when": "2026-07-10",
+        "detail": "Self-imposed deadline to have the app live and shared with one person.",
+        "status": "open"
+      }
+    ],
+    "edges": [
+      {
+        "source": "pick-one-idea",
+        "target": "web-app-project",
+        "kind": "part_of"
+      },
+      {
+        "source": "write-one-sentence",
+        "target": "web-app-project",
+        "kind": "part_of"
+      },
+      {
+        "source": "list-core-screen",
+        "target": "web-app-project",
+        "kind": "part_of"
+      },
+      {
+        "source": "create-empty-repo",
+        "target": "web-app-project",
+        "kind": "part_of"
+      },
+      {
+        "source": "pick-one-idea",
+        "target": "write-one-sentence",
+        "kind": "blocks"
+      },
+      {
+        "source": "write-one-sentence",
+        "target": "list-core-screen",
+        "kind": "blocks"
+      },
+      {
+        "source": "build-first-screen",
+        "target": "web-app-project",
+        "kind": "part_of"
+      },
+      {
+        "source": "wire-core-feature",
+        "target": "web-app-project",
+        "kind": "part_of"
+      },
+      {
+        "source": "deploy-free-host",
+        "target": "web-app-project",
+        "kind": "part_of"
+      },
+      {
+        "source": "ship-deadline",
+        "target": "web-app-project",
+        "kind": "part_of"
+      },
+      {
+        "source": "create-empty-repo",
+        "target": "build-first-screen",
+        "kind": "blocks"
+      },
+      {
+        "source": "build-first-screen",
+        "target": "wire-core-feature",
+        "kind": "blocks"
+      },
+      {
+        "source": "wire-core-feature",
+        "target": "deploy-free-host",
+        "kind": "blocks"
+      },
+      {
+        "source": "deploy-free-host",
+        "target": "ship-deadline",
+        "kind": "blocks"
+      }
+    ]
+  }
+}

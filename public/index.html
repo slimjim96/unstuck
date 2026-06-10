@@ -37,6 +37,10 @@
   #topbar a { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
   #topbar a:hover { color: var(--accent); }
   #topbar button { padding: 5px 12px; font-size: 0.8rem; }
+  #topbar select {
+    background: var(--line); color: var(--ink); border: 0; border-radius: 8px;
+    padding: 5px 8px; font: inherit; font-size: 0.8rem; cursor: pointer;
+  }
 
   #legend {
     position: absolute; bottom: 14px; left: 16px; z-index: 5;
@@ -94,6 +98,12 @@
   <h1>Unstuck — Map</h1>
   <button class="secondary" id="arrange">Auto-arrange</button>
   <button class="secondary" id="clear">Clear map</button>
+  <select id="sample">
+    <option value="">Load sample…</option>
+    <option value="learn-ai">Learning AI/ML</option>
+    <option value="ship-app">Shipping a side project</option>
+    <option value="build-shed">Building a shed</option>
+  </select>
   <a href="/space.html">3D →</a>
   <a href="/focus.html">Focus mode →</a>
 </div>
@@ -327,6 +337,30 @@
   $("arrange").addEventListener("click", () => {
     if (cy.nodes().length) cy.layout({ name: "cose", animate: true, padding: 60 }).run();
     setTimeout(save, 1500);
+  });
+
+  $("sample").addEventListener("change", async (e) => {
+    const which = e.target.value;
+    e.target.value = "";
+    if (!which) return;
+    if (cy.nodes().length && !confirm("Replace the current map with this sample?")) return;
+    try {
+      const res = await fetch("/samples/" + which + ".json");
+      if (!res.ok) throw new Error("Sample not found — run scripts/generate-samples.mjs first.");
+      const sample = await res.json();
+      cy.elements().remove();
+      messages = [];
+      hideNodeBox();
+      cy.add(sample.graph.nodes.map((n) => ({ group: "nodes", data: { status: "open", ...n } })));
+      cy.add(sample.graph.edges.map((ed) => ({ group: "edges",
+        data: { id: ed.source + "->" + ed.target + ":" + ed.kind, ...ed } })));
+      cy.layout({ name: "cose", animate: true, padding: 60 }).run();
+      setTimeout(save, 1500);
+      $("chat").innerHTML = "";
+      addMsg("ai", "Loaded the “" + sample.name + "” sample map. Drag things around, mark steps done, or keep talking — I can see the map as it is now.");
+    } catch (err) {
+      addMsg("err", err.message);
+    }
   });
 
   $("clear").addEventListener("click", () => {

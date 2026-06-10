@@ -173,6 +173,22 @@ put it on the coffee maker. One meal, decided once, in advance."
 
 ---
 
+## Sample Maps (graph-shape spec)
+
+Different domains must produce differently *shaped* graphs. Three sample
+domains live in `public/samples/` (regenerate with
+`node scripts/generate-samples.mjs` whenever the system prompt changes —
+they are real model output, not hand-written):
+
+| Sample | Expected shape |
+|---|---|
+| Learning AI/ML | Broad and exploratory: parallel areas, few hard `blocks` edges, mostly step-based. Entry steps must still be tiny and physical. |
+| Shipping a side project | Decompose-then-converge: ideas → one picked scope → build steps; some time-anchored nodes (deploy, domain renewal). |
+| Building a shed | Dependency-heavy chain: permit → slab → framing → roof as real `blocks` edges; weather/calendar nodes are time-based with `when` dates. |
+
+If a regenerated sample loses its characteristic shape, the prompt
+regressed — that's the eyeball test for the Map lens.
+
 ## Patterns the Examples Encode
 
 1. **Never reflect the fog back.** If the user says "figure out my life,"

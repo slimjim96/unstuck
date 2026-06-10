@@ -4,6 +4,42 @@
 
 ---
 
+## 2026-06-10 — Sample maps + 3D labels and tree layout
+
+**Branch:** `claude/feat/3d-lens` (continuing — all "make 3D good" work)
+
+### What was done
+- User direction: iterate the 3D model against domain-diverse examples
+  (AI/learning vs programming vs building a shed) — different domains
+  produce differently shaped graphs.
+- `scripts/generate-samples.mjs` — runs three 2-turn prompts through the
+  real /api/graph-step engine and writes `public/samples/*.json`.
+  Samples are model output, not hand-written; regenerate when the system
+  prompt changes.
+- Map: "Load sample…" dropdown (fetch sample → replace graph with
+  confirm → cose layout → save). Conversation resets; model sees the
+  loaded map via the usual state injection.
+- Space (3D): visible text labels via three-spritetext (pinned 1.10.0,
+  sprite alongside sphere, dimmed ✓ labels when done) and a Tree layout
+  toggle (dagMode 'td', onDagError tolerates cycles).
+- `docs/EXAMPLES.md`: new "Sample Maps (graph-shape spec)" section — the
+  expected shape per domain is the eyeball test for prompt regressions.
+
+### Verification (live generation, 6 opus calls)
+- learn-ai: 12 nodes, 3 blocks edges → parallel/exploratory ✓
+- ship-app: 9 nodes, 6 blocks, 2 time-ish nodes ✓
+- build-shed: 15 nodes, 11 blocks edges → dependency chain ✓
+  Shapes match the spec table. Samples serve over HTTP.
+- Both CDN pins resolve. WebGL still needs a human eyeball.
+- Ops hygiene: found two orphaned node server processes (cause of the
+  earlier 405); killed, port verified free. Watch .server.pid handling.
+
+### Open items / next steps
+- User: eyeball /space.html with each sample loaded; tree vs free layout.
+- Timeline projection still pending; API key rotation still pending.
+
+---
+
 ## 2026-06-09 (night) — Space: the 3D viewing lens; repo on GitHub
 
 **Branch:** `claude/feat/3d-lens`

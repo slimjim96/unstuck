@@ -4,6 +4,53 @@
 
 ---
 
+## 2026-06-10 (cont. 3) — Timestamps foundation + calm overdue
+
+**Branch:** `claude/feat/3d-lens`
+
+### Context
+- User shared a Peter Sage TEDx summary (procrastination = unconscious
+  programming + environment, not willpower). Ideation landed on four
+  product ideas; user approved starting the first two:
+  (1) timestamp foundation, (2) overdue-red → calm amber.
+  Parked for later sessions: pattern-witness prompt change (model names
+  avoidance signatures, ONE gentle observation max — needs EXAMPLES.md
+  eyeball pass), done-trail/evidence lens, elephant-first splitting
+  (lower the fear bar, not the effort bar, on repeated re-splits).
+  Explicitly rejected: content feeds / media-audit features.
+
+### What was done
+- `createdAt` / `touchedAt` / `doneAt` (ISO) stamped on every node
+  mutation path in the Map: applyOps add_node/update_node (done sets
+  doneAt, reopen removes it), inspector field edits, Done toggle,
+  manual add, sample load. Machine-set, never model-set; deliberately
+  NOT in snapshot() yet — exposing them to the model is the
+  pattern-witness feature's decision. Dragging is arrangement, not
+  engagement: it does not bump touchedAt. README data model updated.
+- Timeline: passed dates now amber ring + "date passed" meta instead of
+  red "overdue" (README principle: no red badges; Sage: don't trigger
+  the amygdala, inform calmly).
+
+### Verification (CDP driver, throwaway, deleted)
+- 15/15: all stamp paths assert against localStorage; reopen removes
+  doneAt; pre-existing nodes get no invented createdAt; timeline shows
+  amber "date passed" and zero red anywhere. Screenshot eyeballed.
+- Driver gotcha: after programmatic applyOps the new node can render
+  off-viewport (fit happened at load) — cy.fit() before computing click
+  coords.
+- User's own server on :3456 again (new PID) — used, left running.
+
+### Files touched
+- `public/index.html` — timestamps; `public/timeline.html` — amber;
+  `README.md` — data model note
+
+### Open items / next steps
+- Next from the TED list: pattern-witness (prompt change → run the 10
+  EXAMPLES.md cases), then done-trail lens (timestamps now exist).
+- API key rotation STILL pending.
+
+---
+
 ## 2026-06-10 (cont. 2) — Full node editing + light mode
 
 **Branch:** `claude/feat/3d-lens`

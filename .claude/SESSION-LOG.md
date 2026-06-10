@@ -4,6 +4,37 @@
 
 ---
 
+## 2026-06-09 (night) — Space: the 3D viewing lens; repo on GitHub
+
+**Branch:** `claude/feat/3d-lens`
+
+### What was done
+- User created the GitHub remote (github.com/slimjim96/unstuck) and pushed
+  `main` (= former claude/feat/graph-canvas tip). Claude work continues on
+  claude/* branches per the workspace rules.
+- Added `public/space.html` — the Space lens: read-only 3D projection via
+  3d-force-graph (pinned 1.79.0, CDN). Reads the exact same localStorage
+  graph the Map saves (`unstuck.graph`), converts Cytoscape element JSON
+  to {nodes, links}, drops dangling edges defensively. Orbit/zoom, click
+  to fly to a node, same color language as the Map (mode colors, stuck
+  red, done dimmed, blocks edges amber with arrows).
+- Live-syncs across tabs via the `storage` event — drag things on the Map
+  in one tab, watch Space update in the other.
+- Map topbar links to /space.html; README + CLAUDE.md updated (Space is a
+  viewing lens; the Map remains the only editing surface).
+
+### Verification
+- CDN pin resolves (HTTP 200). Both pages serve with the right script
+  tags and links. WebGL rendering itself can't be verified headlessly —
+  user should eyeball /space.html in the browser.
+
+### Open items / next steps
+- Timeline projection (mode=time nodes onto a date axis).
+- gh CLI not authenticated — PR created via the push URL instead.
+- Reminder still open: user should rotate the Anthropic API key.
+
+---
+
 ## 2026-06-09 (evening) — v1 direction: the Map (graph canvas)
 
 **Branch:** `claude/feat/graph-canvas`

@@ -32,6 +32,9 @@ open http://localhost:3456)
   lens) + `/api/graph-step` (map lens) Claude proxies. Both system prompts
   and both response schemas live here.
 - `public/index.html` — the Map: Cytoscape.js graph canvas + chat panel.
+  The only editing surface; owns the localStorage graph (`unstuck.graph`).
+- `public/space.html` — the Space lens: read-only 3D view (3d-force-graph),
+  reads the same localStorage graph, live-syncs via the storage event.
 - `public/focus.html` — the Focus lens: original one-card-at-a-time UI.
 
 ## Session Reading Order

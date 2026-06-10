@@ -7,7 +7,8 @@
       "PowerShell($c = Get-Content C:\\\\projects\\\\_claude-projects\\\\todo-new\\\\.env -Raw; \"Length: $\\($c.Length\\)\"; \"Contains key name: $\\($c -match 'ANTHROPIC_API_KEY'\\)\"; \"Looks like a secret value: $\\($c -match 'sk-ant-'\\)\")",
       "PowerShell(git *)",
       "PowerShell(Set-Content *)",
-      "PowerShell($conn = Get-NetTCPConnection -LocalPort 3456 -State Listen -ErrorAction SilentlyContinue; if \\($conn\\) { $owner = Get-Process -Id $conn.OwningProcess; \"Port 3456 held by PID $\\($owner.Id\\) \\($\\($owner.ProcessName\\)\\), started $\\($owner.StartTime\\)\"; Get-Process node -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process $_ -Force }; \"All node processes stopped.\" } else { \"Port free.\" })"
+      "PowerShell($conn = Get-NetTCPConnection -LocalPort 3456 -State Listen -ErrorAction SilentlyContinue; if \\($conn\\) { $owner = Get-Process -Id $conn.OwningProcess; \"Port 3456 held by PID $\\($owner.Id\\) \\($\\($owner.ProcessName\\)\\), started $\\($owner.StartTime\\)\"; Get-Process node -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process $_ -Force }; \"All node processes stopped.\" } else { \"Port free.\" })",
+      "PowerShell(try { $cdn = Invoke-WebRequest \"https://unpkg.com/3d-force-graph@1.79.0/dist/3d-force-graph.min.js\" -Method Head -UseBasicParsing; \"CDN: HTTP $\\($cdn.StatusCode\\), $\\([math]::Round\\($cdn.Headers.'Content-Length'[0]/1kb\\)\\) KB\" } catch { \"CDN pin failed: $\\($_.Exception.Message\\)\" })"
     ]
   }
 }

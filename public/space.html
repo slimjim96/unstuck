@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unstuck — Space</title>
+<script src="https://unpkg.com/3d-force-graph@1.79.0/dist/3d-force-graph.min.js"></script>
+<style>
+  :root {
+    --bg: #10141a; --ink: #e8ecf1; --muted: #8b97a5;
+    --accent: #4fc3a1; --time: #d9a05b; --mixed: #9d8cff; --stuck: #d97b7b;
+  }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.5 "Segoe UI", system-ui, sans-serif; }
+  #graph { position: absolute; inset: 0; }
+  #topbar {
+    position: absolute; top: 14px; left: 16px; z-index: 5;
+    display: flex; align-items: center; gap: 14px;
+  }
+  #topbar h1 { font-size: 1.05rem; font-weight: 600; margin: 0; }
+  #topbar a { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
+  #topbar a:hover { color: var(--accent); }
+  #hint {
+    position: absolute; bottom: 14px; left: 16px; z-index: 5;
+    color: var(--muted); font-size: 0.78rem;
+  }
+  #empty {
+    position: absolute; inset: 0; z-index: 4;
+    display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 10px; text-align: center;
+  }
+  #empty.show { display: flex; }
+  #empty a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div id="graph"></div>
+
+<div id="topbar">
+  <h1>Unstuck — Space</h1>
+  <a href="/">← Map (editing)</a>
+  <a href="/focus.html">Focus mode</a>
+</div>
+
+<div id="empty">
+  <div>Nothing here yet.</div>
+  <div><a href="/">Build your map first</a> — this is a viewing lens on the same graph.</div>
+</div>
+
+<p id="hint">drag to orbit · scroll to zoom · click a node to fly to it · edits happen on the Map</p>
+
+<script>
+  const MODE_COLOR = { step: "#4fc3a1", time: "#d9a05b", mixed: "#9d8cff" };
+
+  // Same-origin localStorage: the Map page saves cy.elements().jsons() here.
+  function loadGraph() {
+    const elements = JSON.parse(localStorage.getItem("unstuck.graph") || "[]");
+    const nodes = [], links = [];
+    for (const el of elements) {
+      const d = el.data || {};
+      if (d.source && d.target) {
+        links.push({ source: d.source, target: d.target, kind: d.kind || "part_of" });
+      } else if (d.id) {
+        nodes.push({ id: d.id, label: d.label || d.id, type: d.type, mode: d.mode,
+                     minutes: d.minutes, when: d.when, detail: d.detail, status: d.status || "open" });
+      }
+    }
+    // drop edges whose endpoints are missing — 3d-force-graph throws on dangling links
+    const ids = new Set(nodes.map((n) => n.id));
+    return { nodes, links: links.filter((l) => ids.has(l.source) && ids.has(l.target)) };
+  }
+
+  function nodeColor(n) {
+    if (n.status === "done") return "#3a4756";
+    if (n.type === "stuck") return "#d97b7b";
+    return MODE_COLOR[n.mode] || "#5a6b7d";
+  }
+
+  function nodeTooltip(n) {
+    const bits = [n.label];
+    const meta = [];
+    if (n.type) meta.push(n.type);
+    if (n.mode) meta.push(n.mode + "-based");
+    if (n.minutes) meta.push("~" + n.minutes + " min");
+    if (n.when) meta.push(n.when);
+    if (n.status === "done") meta.push("done ✓");
+    if (meta.length) bits.push("<span style='color:#8b97a5'>" + meta.join(" · ") + "</span>");
+    if (n.detail) bits.push("<span style='color:#8b97a5'>" + n.detail + "</span>");
+    return bits.join("<br>");
+  }
+
+  const data = loadGraph();
+  document.getElementById("empty").classList.toggle("show", data.nodes.length === 0);
+
+  const Graph = ForceGraph3D()(document.getElementById("graph"))
+    .backgroundColor("#10141a")
+    .graphData(data)
+    .nodeLabel(nodeTooltip)
+    .nodeColor(nodeColor)
+    .nodeVal((n) => (n.type === "stuck" || n.type === "task" ? 6 : 2))
+    .nodeOpacity(0.92)
+    .linkColor((l) => (l.kind === "blocks" ? "#d9a05b" : l.kind === "related" ? "#2f3a48" : "#3a4756"))
+    .linkWidth((l) => (l.kind === "blocks" ? 1.5 : 0.8))
+    .linkDirectionalArrowLength((l) => (l.kind === "blocks" ? 4 : 0))
+    .linkDirectionalArrowRelPos(0.9)
+    .linkOpacity(0.5)
+    .onNodeClick((node) => {
+      // fly the camera to the node
+      const dist = 90;
+      const ratio = 1 + dist / Math.hypot(node.x || 1, node.y || 1, node.z || 1);
+      Graph.cameraPosition(
+        { x: node.x * ratio, y: node.y * ratio, z: node.z * ratio },
+        node, 900);
+    });
+
+  // Live-sync: the storage event fires when the Map (in another tab) saves.
+  window.addEventListener("storage", (e) => {
+    if (e.key === "unstuck.graph") {
+      const fresh = loadGraph();
+      document.getElementById("empty").classList.toggle("show", fresh.nodes.length === 0);
+      Graph.graphData(fresh);
+    }
+  });
+</script>
+</body>
+</html>

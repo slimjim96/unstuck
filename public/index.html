@@ -4,28 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Unstuck — Map</title>
-<script>if (localStorage.getItem("unstuck.theme") === "light") document.documentElement.classList.add("light");</script>
+<script src="/assets/app.js"></script>
+<link rel="stylesheet" href="/assets/app.css">
 <script src="https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
 <style>
-  :root {
-    --bg: #10141a;
-    --panel: #161c24;
-    --card: #1a212b;
-    --ink: #e8ecf1;
-    --muted: #8b97a5;
-    --accent: #4fc3a1;
-    --time: #d9a05b;
-    --mixed: #9d8cff;
-    --stuck: #d97b7b;
-    --line: #2a3442;
-    color-scheme: dark;
-  }
-  html.light {
-    --bg: #eef2f5; --panel: #f7f9fb; --card: #ffffff; --ink: #1c2733;
-    --muted: #5f6e7d; --accent: #1f9d7e; --time: #b87b2e; --mixed: #7263d2;
-    --stuck: #c45c5c; --line: #d4dde4;
-    color-scheme: light;
-  }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
   body {
@@ -37,15 +19,8 @@
 
   #cy { flex: 1; min-width: 0; }
 
-  #topbar {
-    position: absolute; top: 14px; left: 16px; z-index: 5;
-    display: flex; align-items: center; gap: 12px;
-  }
-  #topbar h1 { font-size: 1.05rem; font-weight: 600; margin: 0; }
-  #topbar a { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
-  #topbar a:hover { color: var(--accent); }
-  #topbar button { padding: 5px 12px; font-size: 0.8rem; }
-  #topbar select {
+  .topbar > button { padding: 5px 12px; font-size: 0.8rem; }
+  .topbar select {
     background: var(--line); color: var(--ink); border: 0; border-radius: 8px;
     padding: 5px 8px; font: inherit; font-size: 0.8rem; cursor: pointer;
   }
@@ -114,21 +89,17 @@
 <body>
 <div id="cy"></div>
 
-<div id="topbar">
+<div class="topbar">
   <h1>Unstuck — Map</h1>
   <button class="secondary" id="arrange">Auto-arrange</button>
   <button class="secondary" id="clear">Clear map</button>
-  <button class="secondary" id="theme">Light</button>
   <select id="sample">
     <option value="">Load sample…</option>
     <option value="learn-ai">Learning AI/ML</option>
     <option value="ship-app">Shipping a side project</option>
     <option value="build-shed">Building a shed</option>
   </select>
-  <a href="/space.html">3D →</a>
-  <a href="/timeline.html">Timeline →</a>
-  <a href="/trail.html">Trail →</a>
-  <a href="/focus.html">Focus mode →</a>
+  <nav data-nav></nav>
 </div>
 
 <div id="legend">
@@ -202,16 +173,9 @@
   let busy = false;
   let selected = null;
 
-  // canvas colors live in JS (cytoscape style), so the theme needs both the
-  // CSS vars (html.light) and this palette swap + cy.style().update()
-  const GRAPH_COLORS = {
-    dark: { step: "#4fc3a1", time: "#d9a05b", mixed: "#9d8cff", stuck: "#d97b7b",
-            plain: "#5a6b7d", ink: "#e8ecf1", edge: "#3a4756", related: "#2f3a48" },
-    light: { step: "#1f9d7e", time: "#b87b2e", mixed: "#7263d2", stuck: "#c45c5c",
-             plain: "#8595a5", ink: "#1c2733", edge: "#b7c2cc", related: "#d4dde4" },
-  };
-  let theme = localStorage.getItem("unstuck.theme") || "dark";
-  let GC = GRAPH_COLORS[theme];
+  // canvas colors come from the shared palette (assets/app.js); the style
+  // functions read it lazily so a theme change only needs cy.style().update()
+  const P = () => Unstuck.palette();
 
   const cy = cytoscape({
     container: $("cy"),
@@ -219,9 +183,9 @@
     wheelSensitivity: 0.25,
     style: [
       { selector: "node", style: {
-          "background-color": (n) => n.data("type") === "stuck" ? GC.stuck : (GC[n.data("mode")] || GC.plain),
+          "background-color": (n) => n.data("type") === "stuck" ? P().stuck : (P()[n.data("mode")] || P().plain),
           "label": "data(label)",
-          "color": () => GC.ink,
+          "color": () => P().ink,
           "font-size": 11,
           "text-wrap": "wrap",
           "text-max-width": 110,
@@ -232,16 +196,16 @@
           "border-width": 0,
         } },
       { selector: "node[status = 'done']", style: { "opacity": 0.35, "label": (n) => "✓ " + n.data("label") } },
-      { selector: "node:selected", style: { "border-width": 3, "border-color": () => GC.ink } },
+      { selector: "node:selected", style: { "border-width": 3, "border-color": () => P().ink } },
       { selector: "edge", style: {
-          "width": 1.5, "line-color": () => GC.edge, "curve-style": "bezier",
+          "width": 1.5, "line-color": () => P().edge, "curve-style": "bezier",
           "target-arrow-shape": "none",
         } },
       { selector: "edge[kind = 'blocks']", style: {
-          "line-style": "dashed", "line-color": () => GC.time,
-          "target-arrow-shape": "triangle", "target-arrow-color": () => GC.time,
+          "line-style": "dashed", "line-color": () => P().time,
+          "target-arrow-shape": "triangle", "target-arrow-color": () => P().time,
         } },
-      { selector: "edge[kind = 'related']", style: { "line-style": "dotted", "line-color": () => GC.related } },
+      { selector: "edge[kind = 'related']", style: { "line-style": "dotted", "line-color": () => P().related } },
     ],
   });
 
@@ -473,18 +437,7 @@
     }
   });
 
-  function setTheme(t) {
-    theme = t; GC = GRAPH_COLORS[t];
-    localStorage.setItem("unstuck.theme", t);
-    document.documentElement.classList.toggle("light", t === "light");
-    $("theme").textContent = t === "light" ? "Dark" : "Light";
-    cy.style().update(); // re-runs the style functions with the new palette
-  }
-  setTheme(theme);
-  $("theme").addEventListener("click", () => setTheme(theme === "light" ? "dark" : "light"));
-  window.addEventListener("storage", (e) => {
-    if (e.key === "unstuck.theme" && e.newValue && e.newValue !== theme) setTheme(e.newValue);
-  });
+  Unstuck.onThemeChange(() => cy.style().update());
 
   $("clear").addEventListener("click", () => {
     if (confirm("Clear the whole map and conversation?")) {

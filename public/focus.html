@@ -3,31 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Unstuck</title>
-<script>if (localStorage.getItem("unstuck.theme") === "light") document.documentElement.classList.add("light");</script>
+<title>Unstuck — Focus</title>
+<script src="/assets/app.js"></script>
+<link rel="stylesheet" href="/assets/app.css">
 <style>
-  :root {
-    --bg: #10141a;
-    --card: #1a212b;
-    --ink: #e8ecf1;
-    --muted: #8b97a5;
-    --accent: #4fc3a1;
-    --accent-soft: rgba(79, 195, 161, 0.12);
-    --warn: #d9a05b;
-    --line: #2a3442;
-    color-scheme: dark;
-  }
-  html.light {
-    --bg: #eef2f5;
-    --card: #ffffff;
-    --ink: #1c2733;
-    --muted: #5f6e7d;
-    --accent: #1f9d7e;
-    --accent-soft: rgba(31, 157, 126, 0.12);
-    --warn: #b87b2e;
-    --line: #d4dde4;
-    color-scheme: light;
-  }
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -38,9 +17,8 @@
     display: flex;
     justify-content: center;
   }
-  main { width: min(640px, 92vw); padding: 9vh 0 6vh; }
-  h1 { font-size: 1.4rem; font-weight: 600; letter-spacing: 0.01em; margin: 0 0 0.3rem; }
-  .tagline { color: var(--muted); margin: 0 0 2.2rem; font-size: 0.95rem; }
+  main { width: min(640px, 92vw); padding: 14vh 0 6vh; }
+  .tagline { color: var(--muted); margin: 0 0 2rem; font-size: 0.95rem; }
 
   textarea {
     width: 100%;
@@ -70,14 +48,15 @@
   html.light button:not(.secondary) { color: #fff; }
   button.secondary { background: var(--line); color: var(--ink); font-weight: 400; }
   button:disabled { opacity: 0.45; cursor: wait; }
-  .row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+  .row a { color: var(--muted); font-size: 0.9rem; }
+  .row a:hover { color: var(--accent); }
 
   .card {
     background: var(--card);
     border: 1px solid var(--line);
     border-radius: 14px;
     padding: 22px 24px;
-    margin-top: 1.6rem;
     animation: rise 0.35s ease both;
   }
   @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
@@ -85,57 +64,88 @@
     font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em;
     color: var(--accent); margin-bottom: 0.5rem;
   }
-  .card.question .label { color: var(--warn); }
+  .card.question .label { color: var(--time); }
   .card p { margin: 0; }
-  .not-today {
-    margin-top: 0.9rem; padding: 10px 14px; border-radius: 10px;
-    background: var(--accent-soft); color: var(--accent); font-size: 0.92rem;
-  }
-  .error { color: #e07a7a; margin-top: 1rem; font-size: 0.92rem; }
+  .card .meta { color: var(--muted); font-size: 0.88rem; margin-top: 0.7rem; }
+  .context { color: var(--muted); font-size: 0.92rem; margin: 0 0 1rem; }
+
+  .error { color: var(--stuck); margin-top: 1rem; font-size: 0.92rem; }
   .hidden { display: none; }
   .quiet { color: var(--muted); font-size: 0.9rem; margin-top: 2.5rem; }
 </style>
 </head>
 <body>
-<button class="secondary" id="theme"
-  style="position: fixed; top: 14px; right: 16px; font-size: 0.8rem; padding: 5px 12px;">Light</button>
-<main>
-  <h1>Unstuck</h1>
-  <p class="tagline">Tell it the thing you keep avoiding. Get back one tiny step.</p>
+<div class="topbar">
+  <h1>Unstuck — Focus</h1>
+  <nav data-nav></nav>
+</div>
 
-  <section id="capture">
-    <textarea id="stuck" placeholder="I keep meaning to deal with…" autofocus></textarea>
+<main>
+  <p class="tagline" id="tagline">One tiny step at a time, straight from your map.</p>
+
+  <section id="capture" class="hidden">
+    <textarea id="stuck" placeholder="I keep meaning to deal with…"></textarea>
     <div class="row">
       <button id="go">Make it smaller</button>
     </div>
   </section>
 
   <section id="step" class="hidden">
-    <div class="card" id="card">
-      <div class="label" id="card-label"></div>
+    <p class="context hidden" id="context"></p>
+    <div class="card">
+      <div class="label">Your one tiny step</div>
       <p id="card-text"></p>
-      <div class="not-today hidden" id="not-today"></div>
+      <p class="meta" id="card-meta"></p>
     </div>
-
-    <div class="row hidden" id="action-buttons">
+    <div class="row">
       <button id="did-it">I did it</button>
       <button class="secondary" id="too-big">Still too big</button>
-      <button class="secondary" id="start-over">Different thing</button>
+      <button class="secondary" id="different">Different one</button>
     </div>
+  </section>
 
-    <div class="hidden" id="answer-area">
-      <div class="row">
-        <textarea id="answer" rows="2" placeholder="Your answer…" style="min-height:54px"></textarea>
-      </div>
-      <div class="row">
-        <button id="send-answer">Answer</button>
-        <button class="secondary" id="use-default"></button>
-      </div>
+  <section id="celebrate" class="hidden">
+    <div class="card">
+      <div class="label">Done</div>
+      <p id="celebrate-text"></p>
     </div>
-
-    <div class="row hidden" id="message-buttons">
-      <button id="next-one">Give me the next tiny step</button>
+    <div class="row">
+      <button id="next-one">Next tiny step</button>
       <button class="secondary" id="done-for-now">Done for now</button>
+    </div>
+  </section>
+
+  <section id="rest" class="hidden">
+    <div class="card">
+      <div class="label">Unstuck</div>
+      <p>Good. Come back whenever — nothing here punishes absence.</p>
+    </div>
+    <div class="row">
+      <button class="secondary" id="one-more">Pick another anyway</button>
+    </div>
+  </section>
+
+  <section id="split-offer" class="hidden">
+    <div class="card">
+      <div class="label">Nothing bite-sized yet</div>
+      <p id="split-text"></p>
+    </div>
+    <div class="row">
+      <button id="split-go">Make it smaller</button>
+      <a href="/">or open the Map</a>
+    </div>
+  </section>
+
+  <section id="ask" class="hidden">
+    <div class="card question">
+      <div class="label">Quick question</div>
+      <p id="ask-text"></p>
+    </div>
+    <div class="row">
+      <textarea id="answer" rows="2" placeholder="Your answer…" style="min-height:54px"></textarea>
+    </div>
+    <div class="row">
+      <button id="send-answer">Answer</button>
     </div>
   </section>
 
@@ -145,116 +155,281 @@
 
 <script>
   const $ = (id) => document.getElementById(id);
-  let messages = [];
+  const SECTIONS = ["capture", "step", "celebrate", "rest", "split-offer", "ask"];
   let busy = false;
+  let convo = [];            // this visit only — the graph itself is the memory
+  let excluded = new Set();  // "different one" skips, this visit only
+  let current = null;        // node id on the card
+  let splitTarget = null;
 
-  function show(el, on = true) { el.classList.toggle("hidden", !on); }
+  // ---- the shared graph (same localStorage the Map saves) ----
+  function loadElements() { return JSON.parse(localStorage.getItem("unstuck.graph") || "[]"); }
+  function saveElements(els) { localStorage.setItem("unstuck.graph", JSON.stringify(els)); }
 
+  function graphFrom(els) {
+    const nodes = [], edges = [];
+    for (const el of els) {
+      const d = el.data || {};
+      if (d.source && d.target) edges.push({ source: d.source, target: d.target, kind: d.kind || "part_of" });
+      else if (d.id) nodes.push(d);
+    }
+    return { nodes, edges };
+  }
+
+  // same day-precision snapshot the Map sends
+  function snapshot(els) {
+    const g = graphFrom(els);
+    const day = (iso) => (iso ? iso.slice(0, 10) : undefined);
+    return {
+      nodes: g.nodes.map((d) => ({ id: d.id, label: d.label, type: d.type, mode: d.mode,
+        minutes: d.minutes, when: d.when, detail: d.detail, status: d.status || "open",
+        created: day(d.createdAt), touched: day(d.touchedAt), done: day(d.doneAt) })),
+      edges: g.edges,
+    };
+  }
+
+  // ---- the deterministic picker (hybrid contract: no API call to pick) ----
+  // candidates: open, type=step, not blocked by an open node
+  // order: stalest cluster first, then smallest minutes, then oldest
+  function pick(g, skip = new Set()) {
+    const byId = new Map(g.nodes.map((n) => [n.id, n]));
+    const isOpen = (n) => n && (n.status || "open") !== "done";
+    const blocked = new Set(g.edges
+      .filter((e) => e.kind === "blocks" && isOpen(byId.get(e.source)))
+      .map((e) => e.target));
+    const parentOf = new Map(g.edges.filter((e) => e.kind === "part_of").map((e) => [e.source, e.target]));
+    const rootOf = (id) => {
+      let cur = id; const seen = new Set();
+      while (parentOf.has(cur) && !seen.has(cur)) { seen.add(cur); cur = parentOf.get(cur); }
+      return cur;
+    };
+    const lastTouch = new Map(); // cluster root -> most recent activity
+    for (const n of g.nodes) {
+      const r = rootOf(n.id);
+      const t = n.touchedAt || n.createdAt || "";
+      if (t > (lastTouch.get(r) || "")) lastTouch.set(r, t);
+    }
+    const candidates = g.nodes.filter((n) =>
+      isOpen(n) && n.type === "step" && !blocked.has(n.id) && !skip.has(n.id));
+    candidates.sort((a, b) => {
+      const sa = lastTouch.get(rootOf(a.id)) || "", sb = lastTouch.get(rootOf(b.id)) || "";
+      if (sa !== sb) return sa < sb ? -1 : 1;
+      const ma = a.minutes || 999, mb = b.minutes || 999;
+      if (ma !== mb) return ma - mb;
+      const ca = a.createdAt || "", cb = b.createdAt || "";
+      return ca < cb ? -1 : ca > cb ? 1 : 0;
+    });
+    return { step: candidates[0] || null, parentOf, byId };
+  }
+
+  function stalestOpenBig(g) {
+    const isOpen = (n) => (n.status || "open") !== "done";
+    const bigs = g.nodes.filter((n) => isOpen(n) && (n.type === "stuck" || n.type === "task"));
+    bigs.sort((a, b) => ((a.touchedAt || a.createdAt || "") < (b.touchedAt || b.createdAt || "") ? -1 : 1));
+    return bigs[0] || null;
+  }
+
+  // ---- UI ----
+  function show(name) {
+    for (const s of SECTIONS) $(s).classList.toggle("hidden", s !== name);
+    $("error").classList.add("hidden");
+  }
   function setBusy(on) {
     busy = on;
     document.querySelectorAll("button").forEach((b) => (b.disabled = on));
   }
+  function fail(msg) { $("error").textContent = msg; $("error").classList.remove("hidden"); }
 
-  async function send(userText) {
-    messages.push({ role: "user", content: userText });
+  function showStep(step, g, contextText) {
+    current = step.id;
+    $("card-text").textContent = step.label;
+    const bits = [];
+    if (step.minutes) bits.push("~" + step.minutes + " min");
+    const parent = g.parentOf.get(step.id) && g.byId.get(g.parentOf.get(step.id));
+    if (parent) bits.push("part of “" + parent.label + "”");
+    if (step.detail) bits.push(step.detail);
+    $("card-meta").textContent = bits.join(" · ");
+    $("card-meta").classList.toggle("hidden", !bits.length);
+    $("context").textContent = contextText || "";
+    $("context").classList.toggle("hidden", !contextText);
+    show("step");
+  }
+
+  function refresh(opts = {}) {
+    if (!opts.keepSkips) excluded = new Set();
+    const els = loadElements();
+    const g = graphFrom(els);
+    if (!g.nodes.length) { show("capture"); $("stuck").focus(); return; }
+    const picked = pick(g, excluded);
+    if (picked.step) { showStep(picked.step, picked, opts.context); return; }
+    const target = stalestOpenBig(g);
+    if (target) {
+      splitTarget = target;
+      $("split-text").textContent = "“" + target.label + "” is on your map, but nothing on it is small enough to just do.";
+      show("split-offer");
+      return;
+    }
+    $("tagline").textContent = "Map's clear. Dump the next thing weighing on you.";
+    show("capture");
+  }
+
+  // ---- applying model operations (same vocabulary as the Map) ----
+  function placeNear(id, ops, els) {
+    const partOf = ops.find((o) => o.op === "add_edge" && o.kind === "part_of" && o.source === id);
+    const anchor = partOf && els.find((e) => e.data && e.data.id === partOf.target && e.position);
+    const base = anchor ? anchor.position : { x: 450, y: 320 };
+    return { x: base.x + (Math.random() - 0.5) * 160, y: base.y + 60 + (Math.random() - 0.5) * 80 };
+  }
+
+  function applyOps(ops, els) {
+    const now = new Date().toISOString();
+    const node = (id) => els.find((e) => e.data && e.data.id === id && !e.data.source);
+    for (const o of ops) {
+      try {
+        if (o.op === "add_node" && o.id && !node(o.id)) {
+          els.push({ group: "nodes",
+            data: { id: o.id, label: o.label || o.id, type: o.type || "task", mode: o.mode || "step",
+                    minutes: o.minutes, when: o.when, detail: o.detail, status: o.status || "open",
+                    createdAt: now, touchedAt: now },
+            position: placeNear(o.id, ops, els) });
+        } else if (o.op === "update_node") {
+          const n = node(o.id);
+          if (n) {
+            for (const k of ["label", "type", "mode", "minutes", "when", "detail", "status"])
+              if (o[k] !== undefined) n.data[k] = o[k];
+            n.data.touchedAt = now;
+            if (o.status === "done") n.data.doneAt = now;
+            else if (o.status === "open") delete n.data.doneAt;
+          }
+        } else if (o.op === "remove_node") {
+          const i = els.findIndex((e) => e.data && (e.data.id === o.id || e.data.source === o.id || e.data.target === o.id));
+          for (let j = els.length - 1; j >= 0; j--) {
+            const d = els[j].data || {};
+            if (d.id === o.id || d.source === o.id || d.target === o.id) els.splice(j, 1);
+          }
+        } else if (o.op === "add_edge" && node(o.source) && node(o.target)) {
+          const eid = o.source + "->" + o.target + ":" + (o.kind || "part_of");
+          if (!els.some((e) => e.data && e.data.id === eid))
+            els.push({ group: "edges", data: { id: eid, source: o.source, target: o.target, kind: o.kind || "part_of" } });
+        } else if (o.op === "remove_edge") {
+          for (let j = els.length - 1; j >= 0; j--) {
+            const d = els[j].data || {};
+            if (d.source === o.source && d.target === o.target) els.splice(j, 1);
+          }
+        }
+      } catch (e) { console.warn("op failed", o, e); }
+    }
+    saveElements(els);
+  }
+
+  // ---- the model (split / capture / questions only — never to pick) ----
+  async function graphStep(userText) {
+    convo.push({ role: "user", content: userText });
     setBusy(true);
-    show($("error"), false);
     try {
-      const res = await fetch("/api/next-step", {
+      const els = loadElements();
+      const res = await fetch("/api/graph-step", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify({ messages: convo, graph: snapshot(els) }),
       });
-      const step = await res.json();
-      if (!res.ok) throw new Error(step.error || "Something went wrong.");
-      messages.push({ role: "assistant", content: JSON.stringify(step) });
-      render(step);
+      const out = await res.json();
+      if (!res.ok) throw new Error(out.error || "Something went wrong.");
+      convo.push({ role: "assistant", content: out.reply });
+      applyOps(out.operations || [], els);
+      return out;
     } catch (err) {
-      // keep the failed turn out of history so retry is clean
-      messages.pop();
-      $("error").textContent = err.message;
-      show($("error"));
+      convo.pop();
+      throw err;
     } finally {
       setBusy(false);
     }
   }
 
-  function render(step) {
-    show($("capture"), false);
-    show($("step"));
-    show($("action-buttons"), false);
-    show($("answer-area"), false);
-    show($("message-buttons"), false);
-    show($("not-today"), false);
-
-    const card = $("card");
-    card.className = "card " + step.kind;
-    $("card-text").textContent = step.text;
-
-    if (step.kind === "action") {
-      $("card-label").textContent = "Your one tiny step";
-      if (step.not_today) {
-        $("not-today").textContent = step.not_today;
-        show($("not-today"));
-      }
-      show($("action-buttons"));
-    } else if (step.kind === "question") {
-      $("card-label").textContent = "Quick question";
-      $("answer").value = "";
-      $("use-default").textContent = step.default
-        ? "I don't know — " + step.default
-        : "I don't know, you pick";
-      show($("answer-area"));
-    } else {
-      $("card-label").textContent = "Unstuck";
-      show($("message-buttons"));
-    }
+  // after a capture/split, prefer a step the model just added
+  function afterOps(out) {
+    const ops = out.operations || [];
+    if (!ops.length) { $("ask-text").textContent = out.reply; show("ask"); $("answer").value = ""; $("answer").focus(); return; }
+    const added = new Set(ops.filter((o) => o.op === "add_node").map((o) => o.id));
+    const g = pick(graphFrom(loadElements()), new Set());
+    const fresh = pick(graphFrom(loadElements()),
+      new Set(graphFrom(loadElements()).nodes.filter((n) => !added.has(n.id)).map((n) => n.id)));
+    if (fresh.step) showStep(fresh.step, fresh, out.reply);
+    else if (g.step) showStep(g.step, g, out.reply);
+    else refresh({ context: out.reply });
   }
 
-  function reset() {
-    messages = [];
+  // ---- buttons ----
+  $("go").addEventListener("click", async () => {
+    const t = $("stuck").value.trim();
+    if (!t || busy) return;
     $("stuck").value = "";
-    show($("step"), false);
-    show($("capture"));
-    $("stuck").focus();
-  }
-
-  $("go").addEventListener("click", () => {
-    const text = $("stuck").value.trim();
-    if (text && !busy) send("I'm stuck on this: " + text);
+    try { afterOps(await graphStep("I'm stuck on this: " + t)); }
+    catch (err) { show("capture"); fail(err.message); }
   });
   $("stuck").addEventListener("keydown", (e) => {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) $("go").click();
   });
 
-  $("did-it").addEventListener("click", () => send("I did it."));
-  $("too-big").addEventListener("click", () =>
-    send("That's still too big. Split it smaller."));
-  $("start-over").addEventListener("click", reset);
+  $("did-it").addEventListener("click", () => {
+    if (!current) return;
+    const els = loadElements();
+    const el = els.find((e) => e.data && e.data.id === current && !e.data.source);
+    if (el) {
+      const now = new Date().toISOString();
+      el.data.status = "done"; el.data.doneAt = now; el.data.touchedAt = now;
+      saveElements(els);
+    }
+    const LINES = [
+      "Done. One less looming thing.",
+      "Small, real, finished. That's how this works.",
+      "That was the whole job for now — nicely done.",
+    ];
+    $("celebrate-text").textContent = LINES[Math.floor(Math.random() * LINES.length)];
+    current = null;
+    show("celebrate");
+  });
 
-  $("send-answer").addEventListener("click", () => {
+  $("too-big").addEventListener("click", async () => {
+    if (!current || busy) return;
+    const els = loadElements();
+    const el = els.find((e) => e.data && e.data.id === current && !e.data.source);
+    const label = el ? el.data.label : current;
+    try { afterOps(await graphStep('Split "' + label + '" (id: ' + current + ") smaller — it's still too big.")); }
+    catch (err) { fail(err.message); }
+  });
+
+  $("different").addEventListener("click", () => {
+    if (current) excluded.add(current);
+    refresh({ keepSkips: true });
+  });
+
+  $("next-one").addEventListener("click", () => refresh());
+  $("done-for-now").addEventListener("click", () => show("rest"));
+  $("one-more").addEventListener("click", () => refresh());
+
+  $("split-go").addEventListener("click", async () => {
+    if (!splitTarget || busy) return;
+    try { afterOps(await graphStep('Split "' + splitTarget.label + '" (id: ' + splitTarget.id + ") into tiny first steps — nothing on it is small enough to just do.")); }
+    catch (err) { fail(err.message); }
+  });
+
+  $("send-answer").addEventListener("click", async () => {
     const a = $("answer").value.trim();
-    if (a && !busy) send(a);
+    if (!a || busy) return;
+    try { afterOps(await graphStep(a)); }
+    catch (err) { fail(err.message); }
   });
-  $("use-default").addEventListener("click", () =>
-    send("I don't know — go with your default."));
 
-  $("next-one").addEventListener("click", () =>
-    send("Give me the next tiny step."));
-  $("done-for-now").addEventListener("click", reset);
-
-  let theme = localStorage.getItem("unstuck.theme") || "dark";
-  function setTheme(t) {
-    theme = t;
-    localStorage.setItem("unstuck.theme", t);
-    document.documentElement.classList.toggle("light", t === "light");
-    $("theme").textContent = t === "light" ? "Dark" : "Light";
-  }
-  $("theme").textContent = theme === "light" ? "Dark" : "Light";
-  $("theme").addEventListener("click", () => setTheme(theme === "light" ? "dark" : "light"));
+  // if another tab edits the graph while a step is showing, keep honest
   window.addEventListener("storage", (e) => {
-    if (e.key === "unstuck.theme" && e.newValue && e.newValue !== theme) setTheme(e.newValue);
+    if (e.key !== "unstuck.graph" || !current) return;
+    const g = graphFrom(loadElements());
+    const n = g.nodes.find((x) => x.id === current);
+    if (!n || (n.status || "open") === "done") refresh();
   });
+
+  refresh();
 </script>
 </body>
 </html>

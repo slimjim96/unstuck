@@ -1,0 +1,29 @@
+/* Unstuck shared styles: theme variables + the topbar/nav every lens uses.
+   Page-specific styles stay in each page's <style>. */
+
+:root {
+  --bg: #10141a; --panel: #161c24; --card: #1a212b; --ink: #e8ecf1;
+  --muted: #8b97a5; --line: #2a3442;
+  --accent: #4fc3a1; --time: #d9a05b; --mixed: #9d8cff; --stuck: #d97b7b;
+  color-scheme: dark;
+}
+html.light {
+  --bg: #eef2f5; --panel: #f7f9fb; --card: #ffffff; --ink: #1c2733;
+  --muted: #5f6e7d; --line: #d4dde4;
+  --accent: #1f9d7e; --time: #b87b2e; --mixed: #7263d2; --stuck: #c45c5c;
+  color-scheme: light;
+}
+
+.topbar {
+  position: fixed; top: 14px; left: 16px; right: 16px; z-index: 5;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.topbar h1 { font-size: 1.05rem; font-weight: 600; margin: 0; }
+
+[data-nav] { display: flex; align-items: center; gap: 14px; margin-left: 4px; }
+[data-nav] a { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
+[data-nav] a:hover { color: var(--accent); }
+.topbar button {
+  font: inherit; font-size: 0.8rem; border: 0; border-radius: 8px;
+  padding: 5px 12px; cursor: pointer; background: var(--line); color: var(--ink);
+}

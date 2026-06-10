@@ -72,7 +72,10 @@ visualization is a projection of it.**
 
 - *Map view* — force-directed 2D canvas (Cytoscape.js): clusters emerge
   from relatedness, user drags/rewires/deletes freely.
-- *Focus view* — the v0 one-tiny-step card: the zoomed-all-the-way-in lens.
+- *Focus view* — the one-tiny-step card, now a true projection of the
+  graph: a deterministic picker chooses the entry step (open, unblocked,
+  stalest cluster first, then smallest), "I did it" writes `done` back to
+  the graph, and the model is only called to capture, split, or answer.
 - *Space view* — 3D lens (`3d-force-graph`, `/space.html`): orbit, zoom,
   fly to a node. Deliberately a *viewing* lens, not an editing surface —
   it reads the same saved graph and live-syncs when the Map changes.

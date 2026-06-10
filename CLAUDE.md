@@ -33,6 +33,9 @@ open http://localhost:3456)
   and both response schemas live here.
 - `public/index.html` — the Map: Cytoscape.js graph canvas + chat panel.
   The only editing surface; owns the localStorage graph (`unstuck.graph`).
+- `public/assets/app.js` + `app.css` — shared runtime: theme (pre-paint,
+  persisted, cross-tab), the canvas color palette (`Unstuck.palette()`),
+  and the nav injected into `<nav data-nav>`. Own code, not a dependency.
 - `public/space.html` — the Space lens: read-only 3D view (3d-force-graph),
   reads the same localStorage graph, live-syncs via the storage event.
 - `public/timeline.html` — the Timeline lens: read-only date axis (hand-
@@ -40,7 +43,11 @@ open http://localhost:3456)
   same live-sync, `?sample=` supported.
 - `public/trail.html` — the Trail lens: read-only evidence view of done
   nodes grouped by `doneAt` day, cumulative count, anti-streak by design.
-- `public/focus.html` — the Focus lens: original one-card-at-a-time UI.
+- `public/focus.html` — the Focus lens: one-card-at-a-time projection of
+  the graph. Deterministic picker (open, unblocked step; stalest cluster,
+  then smallest minutes); "I did it" writes done+doneAt back to the shared
+  graph; the model (/api/graph-step) is called only to capture, split, or
+  answer — never to pick.
 
 ## Session Reading Order
 

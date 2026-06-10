@@ -4,32 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Unstuck — Trail</title>
-<script>if (localStorage.getItem("unstuck.theme") === "light") document.documentElement.classList.add("light");</script>
+<script src="/assets/app.js"></script>
+<link rel="stylesheet" href="/assets/app.css">
 <style>
-  :root {
-    --bg: #10141a; --card: #1a212b; --ink: #e8ecf1; --muted: #8b97a5;
-    --accent: #4fc3a1; --line: #2a3442;
-    color-scheme: dark;
-  }
-  html.light {
-    --bg: #eef2f5; --card: #ffffff; --ink: #1c2733; --muted: #5f6e7d;
-    --accent: #1f9d7e; --line: #d4dde4;
-    color-scheme: light;
-  }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
   body { background: var(--bg); color: var(--ink); font: 16px/1.6 "Segoe UI", system-ui, sans-serif; }
-  #topbar {
-    position: fixed; top: 14px; left: 16px; right: 16px; z-index: 5;
-    display: flex; align-items: center; gap: 14px;
-  }
-  #topbar h1 { font-size: 1.05rem; font-weight: 600; margin: 0; }
-  #topbar a { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
-  #topbar a:hover { color: var(--accent); }
-  #topbar button {
-    font: inherit; font-size: 0.8rem; border: 0; border-radius: 8px;
-    padding: 5px 12px; cursor: pointer; background: var(--line); color: var(--ink);
-  }
   main { max-width: 560px; margin: 0 auto; padding: 14vh 20px 8vh; }
   #count { font-size: 3.4rem; font-weight: 700; line-height: 1.1; color: var(--accent); }
   #count-sub { color: var(--muted); margin-bottom: 3rem; }
@@ -52,13 +32,9 @@
 </style>
 </head>
 <body>
-<div id="topbar">
+<div class="topbar">
   <h1>Unstuck — Trail</h1>
-  <a href="/">← Map (editing)</a>
-  <a href="/space.html">Space (3D)</a>
-  <a href="/timeline.html">Timeline</a>
-  <a href="/focus.html">Focus mode</a>
-  <button id="theme">Light</button>
+  <nav data-nav></nav>
 </div>
 
 <main>
@@ -155,19 +131,7 @@
     }
   }
 
-  let theme = localStorage.getItem("unstuck.theme") || "dark";
-  function setTheme(t) {
-    theme = t;
-    localStorage.setItem("unstuck.theme", t);
-    document.documentElement.classList.toggle("light", t === "light");
-    document.getElementById("theme").textContent = t === "light" ? "Dark" : "Light";
-  }
-  document.getElementById("theme").textContent = theme === "light" ? "Dark" : "Light";
-  document.getElementById("theme").addEventListener("click",
-    () => setTheme(theme === "light" ? "dark" : "light"));
-
   window.addEventListener("storage", (e) => {
-    if (e.key === "unstuck.theme" && e.newValue && e.newValue !== theme) setTheme(e.newValue);
     if (e.key === "unstuck.graph" && !sampleParam) { nodes = loadLocal(); render(); }
   });
 

@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Unstuck — Space</title>
-<script>if (localStorage.getItem("unstuck.theme") === "light") document.documentElement.classList.add("light");</script>
+<script src="/assets/app.js"></script>
+<link rel="stylesheet" href="/assets/app.css">
 <!-- ESM + import map so 3d-force-graph and three-spritetext share ONE three
      instance (the UMD builds don't: spritetext binds to a global THREE that
      the 3d-force-graph bundle never exposes, which blanks the scene). -->
@@ -17,32 +18,9 @@
 }
 </script>
 <style>
-  :root {
-    --bg: #10141a; --ink: #e8ecf1; --muted: #8b97a5;
-    --accent: #4fc3a1; --time: #d9a05b; --mixed: #9d8cff; --stuck: #d97b7b;
-    --btn: #2a3442;
-    color-scheme: dark;
-  }
-  html.light {
-    --bg: #eef2f5; --ink: #1c2733; --muted: #5f6e7d;
-    --accent: #1f9d7e; --time: #b87b2e; --mixed: #7263d2; --stuck: #c45c5c;
-    --btn: #d4dde4;
-    color-scheme: light;
-  }
   html, body { height: 100%; margin: 0; }
   body { background: var(--bg); color: var(--ink); font: 15px/1.5 "Segoe UI", system-ui, sans-serif; }
   #graph { position: absolute; inset: 0; }
-  #topbar {
-    position: absolute; top: 14px; left: 16px; z-index: 5;
-    display: flex; align-items: center; gap: 14px;
-  }
-  #topbar h1 { font-size: 1.05rem; font-weight: 600; margin: 0; }
-  #topbar a { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
-  #topbar a:hover { color: var(--accent); }
-  #topbar button {
-    font: inherit; font-size: 0.8rem; border: 0; border-radius: 8px;
-    padding: 5px 12px; cursor: pointer; background: var(--btn); color: var(--ink);
-  }
   #hint {
     position: absolute; bottom: 14px; left: 16px; z-index: 5;
     color: var(--muted); font-size: 0.78rem;
@@ -59,14 +37,10 @@
 <body>
 <div id="graph"></div>
 
-<div id="topbar">
+<div class="topbar">
   <h1>Unstuck — Space</h1>
-  <a href="/">← Map (editing)</a>
-  <a href="/timeline.html">Timeline</a>
-  <a href="/trail.html">Trail</a>
-  <a href="/focus.html">Focus mode</a>
   <button id="layout-mode">Tree layout</button>
-  <button id="theme">Light</button>
+  <nav data-nav></nav>
 </div>
 
 <div id="empty">
@@ -80,18 +54,9 @@
   import ForceGraph3D from "https://esm.sh/3d-force-graph@1.79.0?external=three";
   import SpriteText from "https://esm.sh/three-spritetext@1.10.0?external=three";
 
-  // WebGL colors are set via accessors, so light mode needs a palette swap +
-  // re-setting the accessors (fresh closures force a repaint)
-  const PALETTES = {
-    dark: { bg: "#10141a", step: "#4fc3a1", time: "#d9a05b", mixed: "#9d8cff",
-            stuck: "#d97b7b", plain: "#5a6b7d", done: "#3a4756", label: "#e8ecf1",
-            labelDone: "#5a6b7d", related: "#2f3a48", edge: "#3a4756" },
-    light: { bg: "#eef2f5", step: "#1f9d7e", time: "#b87b2e", mixed: "#7263d2",
-             stuck: "#c45c5c", plain: "#8595a5", done: "#c2ccd6", label: "#1c2733",
-             labelDone: "#8595a5", related: "#cdd8e0", edge: "#aab6c2" },
-  };
-  let theme = localStorage.getItem("unstuck.theme") || "dark";
-  const P = () => PALETTES[theme];
+  // WebGL colors come from the shared palette (assets/app.js); a theme change
+  // re-sets the accessors with fresh closures to force a repaint
+  const P = () => Unstuck.palette();
   const sampleParam = new URLSearchParams(location.search).get("sample");
 
   function toData(nodes, edges) {
@@ -139,7 +104,7 @@
   function makeLabel(n) {
     const big = n.type === "stuck" || n.type === "task";
     const sprite = new SpriteText(n.status === "done" ? "✓ " + n.label : n.label);
-    sprite.color = n.status === "done" ? P().labelDone : P().label;
+    sprite.color = n.status === "done" ? P().labelDone : P().ink;
     sprite.textHeight = big ? 4 : 2.6;
     // sit fully below the sphere (radius ~ nodeRelSize·∛val ≈ 7.3 for big
     // nodes) and skip depth testing so the title is never hidden behind
@@ -196,22 +161,12 @@
         node, 900);
     });
 
-  function setTheme(t) {
-    theme = t;
-    localStorage.setItem("unstuck.theme", t);
-    document.documentElement.classList.toggle("light", t === "light");
-    document.getElementById("theme").textContent = t === "light" ? "Dark" : "Light";
-    // fresh closures so the kapsule props register a change and repaint
+  // fresh closures so the kapsule props register a change and repaint
+  Unstuck.onThemeChange(() => {
     Graph.backgroundColor(P().bg)
       .nodeColor((n) => nodeColor(n))
       .nodeThreeObject((n) => makeLabel(n))
       .linkColor((l) => linkColor(l));
-  }
-  document.getElementById("theme").textContent = theme === "light" ? "Dark" : "Light";
-  document.getElementById("theme").addEventListener("click",
-    () => setTheme(theme === "light" ? "dark" : "light"));
-  window.addEventListener("storage", (e) => {
-    if (e.key === "unstuck.theme" && e.newValue && e.newValue !== theme) setTheme(e.newValue);
   });
 
   // Tree layout: arrange the part_of hierarchy top-down; toggle back to free.

@@ -61,6 +61,103 @@ const RESPONSE_SCHEMA = {
   additionalProperties: false,
 };
 
+// ---- Map lens: /api/graph-step -------------------------------------------
+// The graph is the source of truth; the model proposes operations against it.
+
+const GRAPH_SYSTEM_PROMPT = `You are Unstuck, a decomposition engine that builds a visual map of the user's tasks, events, and stuck things. The user talks to you; you respond with a short reply plus a list of graph OPERATIONS that update their map. The same anti-overthinking principles apply as always: grind vague things down until pieces are small enough that doing them is easier than avoiding them.
+
+The graph model:
+- Nodes: id (short-kebab-slug), label (max ~5 words), type (stuck|task|step|event), mode (step|time|mixed — is this thing driven by sequence/dependencies or by the calendar?), minutes (estimated effort, for steps), when (YYYY-MM-DD, only for time-anchored things), detail (one sentence, optional).
+- Edges: part_of (source is the CHILD, target is the PARENT it decomposes), blocks (source must happen before target), related (same life area).
+
+Rules:
+1. AI proposes, user disposes. You will be shown the CURRENT MAP STATE each turn — it reflects the user's manual edits (moves, deletes, renames). Never re-add something the user deleted, never rename what they renamed, never undo their changes.
+2. When the user dumps a stuck thing, create one parent node (type stuck or task) and decompose into 2-5 child nodes max per turn. Do not flood the map.
+3. Steps must meet the bar: physical, 5-15 minutes, singular, concrete. "Think about X" is never a step. The FIRST step of any decomposition should be the smallest, easiest one — the entry point.
+4. Classify honestly: mode=step for sequence-driven, mode=time for calendar-anchored (give when), mode=mixed when both.
+5. Use blocks edges only for real dependencies, not vague ordering preferences.
+6. When the user says a node is still too big, split THAT node smaller with part_of children — go down a level, never sideways.
+7. Your reply text is one or two warm sentences: what you mapped and, when natural, which single node is the best entry point. Never guilt, never streak-talk.
+8. If the user asks a question or chats, you may return zero operations.
+9. ids must be unique — check the current map state before choosing ids.`;
+
+const GRAPH_SCHEMA = {
+  type: "object",
+  properties: {
+    reply: {
+      type: "string",
+      description: "One or two warm sentences to show in the chat panel. Plain prose.",
+    },
+    operations: {
+      type: "array",
+      description: "Graph operations to apply, in order. May be empty.",
+      items: {
+        type: "object",
+        properties: {
+          op: { type: "string", enum: ["add_node", "update_node", "remove_node", "add_edge", "remove_edge"] },
+          id: { type: "string", description: "Node id (node ops only)." },
+          label: { type: "string" },
+          type: { type: "string", enum: ["stuck", "task", "step", "event"] },
+          mode: { type: "string", enum: ["step", "time", "mixed"] },
+          minutes: { type: "integer" },
+          when: { type: "string", description: "YYYY-MM-DD" },
+          detail: { type: "string" },
+          status: { type: "string", enum: ["open", "done"] },
+          source: { type: "string", description: "Edge ops: source node id." },
+          target: { type: "string", description: "Edge ops: target node id." },
+          kind: { type: "string", enum: ["part_of", "blocks", "related"] },
+        },
+        required: ["op"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["reply", "operations"],
+  additionalProperties: false,
+};
+
+async function graphStep(messages, graph) {
+  // Inject the current map state (including the user's manual edits) into
+  // the final user turn so the model never fights the user's arrangement.
+  const history = messages.slice(0, -1);
+  const last = messages[messages.length - 1];
+  const lastWithState = {
+    role: "user",
+    content:
+      last.content +
+      "\n\n[TODAY: " + new Date().toISOString().slice(0, 10) + "]" +
+      "\n[CURRENT MAP STATE]\n" +
+      JSON.stringify(graph || { nodes: [], edges: [] }),
+  };
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": process.env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-opus-4-8",
+      max_tokens: 16000,
+      thinking: { type: "adaptive" },
+      system: GRAPH_SYSTEM_PROMPT,
+      output_config: {
+        format: { type: "json_schema", schema: GRAPH_SCHEMA },
+      },
+      messages: [...history, lastWithState],
+    }),
+  });
+
+  const body = await res.json();
+  if (!res.ok) {
+    const msg = body?.error?.message || `API error ${res.status}`;
+    throw Object.assign(new Error(msg), { status: res.status });
+  }
+  const textBlock = body.content.find((b) => b.type === "text");
+  return JSON.parse(textBlock.text);
+}
+
 async function nextStep(messages) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -115,6 +212,23 @@ function readBody(req) {
 }
 
 const server = http.createServer(async (req, res) => {
+  if (req.method === "POST" && req.url === "/api/graph-step") {
+    try {
+      const { messages, graph } = JSON.parse(await readBody(req));
+      if (!Array.isArray(messages) || messages.length === 0) {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "messages array required" }));
+        return;
+      }
+      const step = await graphStep(messages, graph);
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify(step));
+    } catch (err) {
+      res.writeHead(err.status || 500, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
   if (req.method === "POST" && req.url === "/api/next-step") {
     try {
       const { messages } = JSON.parse(await readBody(req));

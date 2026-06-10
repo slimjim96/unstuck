@@ -60,6 +60,37 @@ A proposed action MUST be:
 - **Singular** — one action, no "and then".
 - **Concrete** — a stranger could verify it happened.
 
+## v1 Direction: The Map (graph canvas)
+
+The chat card (v0) shows one step at a time — right for the moment of
+paralysis, but it throws away the *shape* of a life: many tasks, events,
+and half-formed worries relating to each other. v1 makes that shape
+visible and manipulable.
+
+**Keystone decision: the graph is the single source of truth; every
+visualization is a projection of it.**
+
+- *Map view* — force-directed 2D canvas (Cytoscape.js): clusters emerge
+  from relatedness, user drags/rewires/deletes freely.
+- *Focus view* — the v0 one-tiny-step card: the zoomed-all-the-way-in lens.
+- *Timeline / dependency / 3D views* — later projections of the same data.
+  3D (`3d-force-graph`) is a viewing lens, not an editing surface.
+
+**The contract: AI proposes, user disposes.** Claude returns graph
+*operations* (add/split/link/annotate); they land on the canvas; the user
+accepts, moves, rewires, or deletes at will. The model is always shown the
+user's current arrangement and never fights it.
+
+### Graph data model
+
+Nodes: `id`, `label` (short), `type` (`stuck | task | step | event`),
+`mode` (`step | time | mixed` — step-based vs time-based, the two axes
+most tasks live on), `minutes` (effort estimate), `when` (date, for
+time-based), `status` (`open | done`), `detail`.
+
+Edges: `kind` = `part_of` (decomposition), `blocks` (dependency),
+`related` (same life area).
+
 ## Prototype Scope (v0)
 
 Prove the loop, nothing else:

@@ -3,228 +3,338 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Unstuck</title>
+<title>Unstuck — Map</title>
+<script src="https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
 <style>
   :root {
     --bg: #10141a;
+    --panel: #161c24;
     --card: #1a212b;
     --ink: #e8ecf1;
     --muted: #8b97a5;
     --accent: #4fc3a1;
-    --accent-soft: rgba(79, 195, 161, 0.12);
-    --warn: #d9a05b;
+    --time: #d9a05b;
+    --mixed: #9d8cff;
+    --stuck: #d97b7b;
+    --line: #2a3442;
   }
   * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
   body {
-    margin: 0;
-    min-height: 100vh;
     background: var(--bg);
     color: var(--ink);
-    font: 17px/1.6 "Segoe UI", system-ui, sans-serif;
+    font: 15px/1.5 "Segoe UI", system-ui, sans-serif;
     display: flex;
-    justify-content: center;
   }
-  main { width: min(640px, 92vw); padding: 9vh 0 6vh; }
-  h1 { font-size: 1.4rem; font-weight: 600; letter-spacing: 0.01em; margin: 0 0 0.3rem; }
-  .tagline { color: var(--muted); margin: 0 0 2.2rem; font-size: 0.95rem; }
 
-  textarea {
-    width: 100%;
-    min-height: 110px;
-    resize: vertical;
-    background: var(--card);
-    color: var(--ink);
-    border: 1px solid #2a3442;
-    border-radius: 12px;
-    padding: 14px 16px;
-    font: inherit;
-    outline: none;
+  #cy { flex: 1; min-width: 0; }
+
+  #topbar {
+    position: absolute; top: 14px; left: 16px; z-index: 5;
+    display: flex; align-items: center; gap: 12px;
   }
-  textarea:focus { border-color: var(--accent); }
+  #topbar h1 { font-size: 1.05rem; font-weight: 600; margin: 0; }
+  #topbar a { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
+  #topbar a:hover { color: var(--accent); }
+  #topbar button { padding: 5px 12px; font-size: 0.8rem; }
+
+  #legend {
+    position: absolute; bottom: 14px; left: 16px; z-index: 5;
+    color: var(--muted); font-size: 0.78rem; display: flex; gap: 14px;
+  }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
+
+  #panel {
+    width: 340px; flex-shrink: 0;
+    background: var(--panel);
+    border-left: 1px solid var(--line);
+    display: flex; flex-direction: column;
+  }
+  #chat { flex: 1; overflow-y: auto; padding: 16px; }
+  .msg { margin-bottom: 12px; max-width: 95%; }
+  .msg.user { color: var(--muted); }
+  .msg.ai {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 10px; padding: 9px 12px;
+  }
+  .msg.err { color: #e07a7a; font-size: 0.88rem; }
+
+  #node-box {
+    border-top: 1px solid var(--line); padding: 12px 16px; display: none;
+  }
+  #node-box.show { display: block; }
+  #node-label { font-weight: 600; margin-bottom: 2px; }
+  #node-meta { color: var(--muted); font-size: 0.82rem; margin-bottom: 8px; }
+  #node-box .row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  #composer { border-top: 1px solid var(--line); padding: 12px 16px 16px; }
+  #composer textarea {
+    width: 100%; min-height: 60px; resize: vertical;
+    background: var(--card); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 12px; font: inherit; outline: none;
+  }
+  #composer textarea:focus { border-color: var(--accent); }
+  #composer .row { display: flex; gap: 8px; margin-top: 8px; }
 
   button {
-    font: inherit;
-    font-size: 0.95rem;
-    border: 0;
-    border-radius: 10px;
-    padding: 10px 18px;
-    cursor: pointer;
-    background: var(--accent);
-    color: #0c1116;
-    font-weight: 600;
+    font: inherit; font-size: 0.88rem; border: 0; border-radius: 8px;
+    padding: 8px 14px; cursor: pointer;
+    background: var(--accent); color: #0c1116; font-weight: 600;
   }
-  button.secondary { background: #2a3442; color: var(--ink); font-weight: 400; }
+  button.secondary { background: var(--line); color: var(--ink); font-weight: 400; }
+  button.danger { background: transparent; color: var(--stuck); font-weight: 400; }
   button:disabled { opacity: 0.45; cursor: wait; }
-  .row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
-
-  .card {
-    background: var(--card);
-    border: 1px solid #2a3442;
-    border-radius: 14px;
-    padding: 22px 24px;
-    margin-top: 1.6rem;
-    animation: rise 0.35s ease both;
-  }
-  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  .card .label {
-    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em;
-    color: var(--accent); margin-bottom: 0.5rem;
-  }
-  .card.question .label { color: var(--warn); }
-  .card p { margin: 0; }
-  .not-today {
-    margin-top: 0.9rem; padding: 10px 14px; border-radius: 10px;
-    background: var(--accent-soft); color: var(--accent); font-size: 0.92rem;
-  }
-  .error { color: #e07a7a; margin-top: 1rem; font-size: 0.92rem; }
-  .hidden { display: none; }
-  .quiet { color: var(--muted); font-size: 0.9rem; margin-top: 2.5rem; }
 </style>
 </head>
 <body>
-<main>
-  <h1>Unstuck</h1>
-  <p class="tagline">Tell it the thing you keep avoiding. Get back one tiny step.</p>
+<div id="cy"></div>
 
-  <section id="capture">
-    <textarea id="stuck" placeholder="I keep meaning to deal with…" autofocus></textarea>
+<div id="topbar">
+  <h1>Unstuck — Map</h1>
+  <button class="secondary" id="arrange">Auto-arrange</button>
+  <button class="secondary" id="clear">Clear map</button>
+  <a href="/focus.html">Focus mode →</a>
+</div>
+
+<div id="legend">
+  <span><span class="dot" style="background:var(--stuck)"></span>stuck</span>
+  <span><span class="dot" style="background:var(--accent)"></span>step-based</span>
+  <span><span class="dot" style="background:var(--time)"></span>time-based</span>
+  <span><span class="dot" style="background:var(--mixed)"></span>mixed</span>
+  <span>dashed = blocks</span>
+</div>
+
+<aside id="panel">
+  <div id="chat">
+    <div class="msg ai">Dump something you keep avoiding — or several things. I'll map them, and you can drag, rewire, and delete anything I put down.</div>
+  </div>
+
+  <div id="node-box">
+    <div id="node-label"></div>
+    <div id="node-meta"></div>
     <div class="row">
-      <button id="go">Make it smaller</button>
+      <button id="split">Split smaller</button>
+      <button class="secondary" id="toggle-done">Done</button>
+      <button class="secondary" id="rename">Rename</button>
+      <button class="danger" id="delete">Delete</button>
     </div>
-  </section>
+  </div>
 
-  <section id="step" class="hidden">
-    <div class="card" id="card">
-      <div class="label" id="card-label"></div>
-      <p id="card-text"></p>
-      <div class="not-today hidden" id="not-today"></div>
+  <div id="composer">
+    <textarea id="input" placeholder="I keep meaning to… (Ctrl+Enter to send)"></textarea>
+    <div class="row">
+      <button id="send">Send</button>
+      <button class="secondary" id="add-node">+ Add node myself</button>
     </div>
-
-    <div class="row hidden" id="action-buttons">
-      <button id="did-it">I did it</button>
-      <button class="secondary" id="too-big">Still too big</button>
-      <button class="secondary" id="start-over">Different thing</button>
-    </div>
-
-    <div class="hidden" id="answer-area">
-      <div class="row">
-        <textarea id="answer" rows="2" placeholder="Your answer…" style="min-height:54px"></textarea>
-      </div>
-      <div class="row">
-        <button id="send-answer">Answer</button>
-        <button class="secondary" id="use-default"></button>
-      </div>
-    </div>
-
-    <div class="row hidden" id="message-buttons">
-      <button id="next-one">Give me the next tiny step</button>
-      <button class="secondary" id="done-for-now">Done for now</button>
-    </div>
-  </section>
-
-  <p class="error hidden" id="error"></p>
-  <p class="quiet">One thing at a time. No streaks, no guilt.</p>
-</main>
+  </div>
+</aside>
 
 <script>
   const $ = (id) => document.getElementById(id);
-  let messages = [];
+  let messages = JSON.parse(localStorage.getItem("unstuck.messages") || "[]");
   let busy = false;
+  let selected = null;
 
-  function show(el, on = true) { el.classList.toggle("hidden", !on); }
+  const MODE_COLOR = { step: "#4fc3a1", time: "#d9a05b", mixed: "#9d8cff" };
+
+  const cy = cytoscape({
+    container: $("cy"),
+    elements: JSON.parse(localStorage.getItem("unstuck.graph") || "[]"),
+    wheelSensitivity: 0.25,
+    style: [
+      { selector: "node", style: {
+          "background-color": (n) => n.data("type") === "stuck" ? "#d97b7b" : (MODE_COLOR[n.data("mode")] || "#5a6b7d"),
+          "label": "data(label)",
+          "color": "#e8ecf1",
+          "font-size": 11,
+          "text-wrap": "wrap",
+          "text-max-width": 110,
+          "text-valign": "bottom",
+          "text-margin-y": 6,
+          "width": (n) => n.data("type") === "stuck" || n.data("type") === "task" ? 34 : 22,
+          "height": (n) => n.data("type") === "stuck" || n.data("type") === "task" ? 34 : 22,
+          "border-width": 0,
+        } },
+      { selector: "node[status = 'done']", style: { "opacity": 0.35, "label": (n) => "✓ " + n.data("label") } },
+      { selector: "node:selected", style: { "border-width": 3, "border-color": "#e8ecf1" } },
+      { selector: "edge", style: {
+          "width": 1.5, "line-color": "#3a4756", "curve-style": "bezier",
+          "target-arrow-shape": "none",
+        } },
+      { selector: "edge[kind = 'blocks']", style: {
+          "line-style": "dashed", "line-color": "#d9a05b",
+          "target-arrow-shape": "triangle", "target-arrow-color": "#d9a05b",
+        } },
+      { selector: "edge[kind = 'related']", style: { "line-style": "dotted", "line-color": "#2f3a48" } },
+    ],
+  });
+
+  // ---- persistence ----
+  function save() {
+    // jsons() keeps node positions and edge data — exactly what reload needs
+    localStorage.setItem("unstuck.graph", JSON.stringify(cy.elements().jsons()));
+    localStorage.setItem("unstuck.messages", JSON.stringify(messages));
+  }
+
+  // graph snapshot for the model: data only, no positions
+  function snapshot() {
+    return {
+      nodes: cy.nodes().map((n) => {
+        const d = n.data();
+        return { id: d.id, label: d.label, type: d.type, mode: d.mode,
+                 minutes: d.minutes, when: d.when, detail: d.detail, status: d.status || "open" };
+      }),
+      edges: cy.edges().map((e) => ({ source: e.data("source"), target: e.data("target"), kind: e.data("kind") })),
+    };
+  }
+
+  // ---- chat panel ----
+  function addMsg(kind, text) {
+    const div = document.createElement("div");
+    div.className = "msg " + kind;
+    div.textContent = text;
+    $("chat").appendChild(div);
+    $("chat").scrollTop = $("chat").scrollHeight;
+  }
 
   function setBusy(on) {
     busy = on;
     document.querySelectorAll("button").forEach((b) => (b.disabled = on));
   }
 
-  async function send(userText) {
-    messages.push({ role: "user", content: userText });
+  // ---- applying model operations ----
+  function placeNear(id, ops) {
+    // place a new node near its parent (part_of target in same batch) or near center
+    const partOf = ops.find((o) => o.op === "add_edge" && o.kind === "part_of" && o.source === id);
+    const anchor = partOf && cy.getElementById(partOf.target).length
+      ? cy.getElementById(partOf.target).position()
+      : { x: cy.width() / 2, y: cy.height() / 2 };
+    return { x: anchor.x + (Math.random() - 0.5) * 160, y: anchor.y + 60 + (Math.random() - 0.5) * 80 };
+  }
+
+  function applyOps(ops) {
+    for (const o of ops) {
+      try {
+        if (o.op === "add_node" && o.id && !cy.getElementById(o.id).length) {
+          cy.add({ group: "nodes",
+            data: { id: o.id, label: o.label || o.id, type: o.type || "task", mode: o.mode || "step",
+                    minutes: o.minutes, when: o.when, detail: o.detail, status: o.status || "open" },
+            position: placeNear(o.id, ops) });
+        } else if (o.op === "update_node") {
+          const n = cy.getElementById(o.id);
+          if (n.length) ["label","type","mode","minutes","when","detail","status"].forEach((k) => {
+            if (o[k] !== undefined) n.data(k, o[k]);
+          });
+        } else if (o.op === "remove_node") {
+          cy.getElementById(o.id).remove();
+        } else if (o.op === "add_edge" && cy.getElementById(o.source).length && cy.getElementById(o.target).length) {
+          const eid = o.source + "->" + o.target + ":" + (o.kind || "part_of");
+          if (!cy.getElementById(eid).length)
+            cy.add({ group: "edges", data: { id: eid, source: o.source, target: o.target, kind: o.kind || "part_of" } });
+        } else if (o.op === "remove_edge") {
+          cy.edges().filter((e) => e.data("source") === o.source && e.data("target") === o.target).remove();
+        }
+      } catch (e) { console.warn("op failed", o, e); }
+    }
+    save();
+  }
+
+  // ---- talking to the server ----
+  async function send(text) {
+    addMsg("user", text);
+    messages.push({ role: "user", content: text });
     setBusy(true);
-    show($("error"), false);
     try {
-      const res = await fetch("/api/next-step", {
+      const res = await fetch("/api/graph-step", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify({ messages, graph: snapshot() }),
       });
-      const step = await res.json();
-      if (!res.ok) throw new Error(step.error || "Something went wrong.");
-      messages.push({ role: "assistant", content: JSON.stringify(step) });
-      render(step);
+      const out = await res.json();
+      if (!res.ok) throw new Error(out.error || "Something went wrong.");
+      messages.push({ role: "assistant", content: out.reply });
+      addMsg("ai", out.reply);
+      applyOps(out.operations || []);
     } catch (err) {
-      // keep the failed turn out of history so retry is clean
       messages.pop();
-      $("error").textContent = err.message;
-      show($("error"));
+      addMsg("err", err.message);
     } finally {
       setBusy(false);
+      save();
     }
   }
 
-  function render(step) {
-    show($("capture"), false);
-    show($("step"));
-    show($("action-buttons"), false);
-    show($("answer-area"), false);
-    show($("message-buttons"), false);
-    show($("not-today"), false);
+  // ---- node selection box ----
+  function showNodeBox(n) {
+    selected = n;
+    $("node-label").textContent = n.data("label");
+    const bits = [];
+    if (n.data("type")) bits.push(n.data("type"));
+    if (n.data("mode")) bits.push(n.data("mode") + "-based");
+    if (n.data("minutes")) bits.push("~" + n.data("minutes") + " min");
+    if (n.data("when")) bits.push(n.data("when"));
+    if (n.data("detail")) bits.push(n.data("detail"));
+    $("node-meta").textContent = bits.join(" · ");
+    $("toggle-done").textContent = n.data("status") === "done" ? "Reopen" : "Done";
+    $("node-box").classList.add("show");
+  }
+  function hideNodeBox() { selected = null; $("node-box").classList.remove("show"); }
 
-    const card = $("card");
-    card.className = "card " + step.kind;
-    $("card-text").textContent = step.text;
+  cy.on("tap", "node", (e) => showNodeBox(e.target));
+  cy.on("tap", (e) => { if (e.target === cy) hideNodeBox(); });
+  cy.on("dragfree", "node", save);
 
-    if (step.kind === "action") {
-      $("card-label").textContent = "Your one tiny step";
-      if (step.not_today) {
-        $("not-today").textContent = step.not_today;
-        show($("not-today"));
-      }
-      show($("action-buttons"));
-    } else if (step.kind === "question") {
-      $("card-label").textContent = "Quick question";
-      $("answer").value = "";
-      $("use-default").textContent = step.default
-        ? "I don't know — " + step.default
-        : "I don't know, you pick";
-      show($("answer-area"));
-    } else {
-      $("card-label").textContent = "Unstuck";
-      show($("message-buttons"));
+  // ---- buttons ----
+  $("send").addEventListener("click", () => {
+    const t = $("input").value.trim();
+    if (t && !busy) { $("input").value = ""; send(t); }
+  });
+  $("input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) $("send").click();
+  });
+
+  $("split").addEventListener("click", () => {
+    if (selected && !busy)
+      send("Split \"" + selected.data("label") + "\" (id: " + selected.id() + ") smaller — it's still too big.");
+  });
+  $("toggle-done").addEventListener("click", () => {
+    if (!selected) return;
+    selected.data("status", selected.data("status") === "done" ? "open" : "done");
+    showNodeBox(selected); save();
+  });
+  $("rename").addEventListener("click", () => {
+    if (!selected) return;
+    const v = prompt("New label:", selected.data("label"));
+    if (v) { selected.data("label", v.trim()); showNodeBox(selected); save(); }
+  });
+  $("delete").addEventListener("click", () => {
+    if (!selected) return;
+    selected.remove(); hideNodeBox(); save();
+  });
+
+  $("add-node").addEventListener("click", () => {
+    const v = prompt("Label for the new node:");
+    if (!v) return;
+    const id = "me-" + Date.now().toString(36);
+    cy.add({ group: "nodes",
+      data: { id, label: v.trim(), type: "task", mode: "step", status: "open" },
+      position: { x: cy.width() / 2, y: cy.height() / 2 } });
+    save();
+  });
+
+  $("arrange").addEventListener("click", () => {
+    if (cy.nodes().length) cy.layout({ name: "cose", animate: true, padding: 60 }).run();
+    setTimeout(save, 1500);
+  });
+
+  $("clear").addEventListener("click", () => {
+    if (confirm("Clear the whole map and conversation?")) {
+      cy.elements().remove(); messages = []; hideNodeBox(); save();
+      $("chat").innerHTML = "";
+      addMsg("ai", "Fresh map. Dump something you keep avoiding.");
     }
-  }
-
-  function reset() {
-    messages = [];
-    $("stuck").value = "";
-    show($("step"), false);
-    show($("capture"));
-    $("stuck").focus();
-  }
-
-  $("go").addEventListener("click", () => {
-    const text = $("stuck").value.trim();
-    if (text && !busy) send("I'm stuck on this: " + text);
   });
-  $("stuck").addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) $("go").click();
-  });
-
-  $("did-it").addEventListener("click", () => send("I did it."));
-  $("too-big").addEventListener("click", () =>
-    send("That's still too big. Split it smaller."));
-  $("start-over").addEventListener("click", reset);
-
-  $("send-answer").addEventListener("click", () => {
-    const a = $("answer").value.trim();
-    if (a && !busy) send(a);
-  });
-  $("use-default").addEventListener("click", () =>
-    send("I don't know — go with your default."));
-
-  $("next-one").addEventListener("click", () =>
-    send("Give me the next tiny step."));
-  $("done-for-now").addEventListener("click", reset);
 </script>
 </body>
 </html>

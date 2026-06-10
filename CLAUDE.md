@@ -28,9 +28,11 @@ open http://localhost:3456)
 
 - `docs/EXAMPLES.md` — the real spec: 10 stuck-thoughts + ideal responses;
   also the prompt-engineering data. Change behavior here first.
-- `server.js` — entire backend: static files + `/api/next-step` Claude proxy.
-  The system prompt lives here.
-- `public/index.html` — entire frontend (single file, no dependencies).
+- `server.js` — entire backend: static files + `/api/next-step` (focus
+  lens) + `/api/graph-step` (map lens) Claude proxies. Both system prompts
+  and both response schemas live here.
+- `public/index.html` — the Map: Cytoscape.js graph canvas + chat panel.
+- `public/focus.html` — the Focus lens: original one-card-at-a-time UI.
 
 ## Session Reading Order
 
@@ -40,8 +42,13 @@ open http://localhost:3456)
 
 ## Project-Specific Rules
 
-- Zero npm dependencies in v0 — Node 22 native APIs only. Adding a package
-  needs an explicit reason recorded in the session log.
+- Zero npm dependencies server-side — Node 22 native APIs only. Frontend
+  libraries are allowed via CDN `<script>` tags only (no build step);
+  currently Cytoscape.js. Reason recorded in session log 2026-06-09:
+  graph editing UI is not reasonably hand-rollable.
+- The graph is the single source of truth; views are projections (see
+  README → v1 Direction). AI proposes graph operations; the user's manual
+  arrangement is never overridden.
 - Any change to the system prompt must be checked against all 10 examples
   in `docs/EXAMPLES.md` (eyeball test).
 - Proposed actions must satisfy the bar in README.md: physical, 5–15 min,

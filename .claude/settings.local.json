@@ -3,7 +3,11 @@
     "allow": [
       "PowerShell($p = Start-Process node -ArgumentList \"C:\\\\projects\\\\_claude-projects\\\\todo-new\\\\server.js\" -WorkingDirectory \"C:\\\\projects\\\\_claude-projects\\\\todo-new\" -PassThru -WindowStyle Hidden; Start-Sleep -Seconds 1.5; try { $r = Invoke-WebRequest http://localhost:3456/ -UseBasicParsing; \"HTTP $\\($r.StatusCode\\), $\\($r.Content.Length\\) bytes, title ok: $\\($r.Content -match '<title>Unstuck</title>'\\)\"; $api = Invoke-WebRequest http://localhost:3456/api/next-step -Method POST -Body '{\"messages\":[]}' -ContentType 'application/json' -UseBasicParsing -SkipHttpErrorCheck; \"API validation: HTTP $\\($api.StatusCode\\) $\\($api.Content\\)\" } finally { Stop-Process $p -Force })",
       "PowerShell($assistant = '{\\\\\"kind\\\\\":\\\\\"question\\\\\",\\\\\"text\\\\\":\\\\\"Roughly where are you with this — have you not started gathering anything yet, or do you have some documents collected and just need to actually file?\\\\\",\\\\\"default\\\\\":\\\\\"If you''re not sure, I''ll assume you haven''t started gathering anything yet.\\\\\",\\\\\"not_today\\\\\":\\\\\"You are NOT filing anything today.\\\\\"}'; $payload = @{ messages = @\\( @{ role = \"user\"; content = \"I'm stuck on this: I need to deal with my taxes\" }, @{ role = \"assistant\"; content = $assistant }, @{ role = \"user\"; content = \"I don't know — go with your default.\" } \\) } | ConvertTo-Json -Depth 5; $r = Invoke-WebRequest http://localhost:3456/api/next-step -Method POST -Body $payload -ContentType 'application/json' -UseBasicParsing -SkipHttpErrorCheck -TimeoutSec 120; \"HTTP $\\($r.StatusCode\\)\"; $r.Content)",
-      "PowerShell(Stop-Process *)"
+      "PowerShell(Stop-Process *)",
+      "PowerShell($c = Get-Content C:\\\\projects\\\\_claude-projects\\\\todo-new\\\\.env -Raw; \"Length: $\\($c.Length\\)\"; \"Contains key name: $\\($c -match 'ANTHROPIC_API_KEY'\\)\"; \"Looks like a secret value: $\\($c -match 'sk-ant-'\\)\")",
+      "PowerShell(git *)",
+      "PowerShell(Set-Content *)",
+      "PowerShell($conn = Get-NetTCPConnection -LocalPort 3456 -State Listen -ErrorAction SilentlyContinue; if \\($conn\\) { $owner = Get-Process -Id $conn.OwningProcess; \"Port 3456 held by PID $\\($owner.Id\\) \\($\\($owner.ProcessName\\)\\), started $\\($owner.StartTime\\)\"; Get-Process node -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process $_ -Force }; \"All node processes stopped.\" } else { \"Port free.\" })"
     ]
   }
 }

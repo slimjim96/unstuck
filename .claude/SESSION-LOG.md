@@ -4,7 +4,33 @@
 
 ---
 
-## 2026-06-09 — Project inception: concept, spec-by-example, working v0 prototype
+## 2026-06-09 (later) — Live API verified; structured-output schema fix
+
+**Branch:** `claude/init/todo-new`
+
+### What was done
+- User set `ANTHROPIC_API_KEY` as a Windows user env var; loaded it from
+  `HKCU:\Environment` into the session (new terminals pick it up natively).
+- Verified the full loop live against claude-opus-4-8: stuck-thought →
+  clarifying question (with default + not_today) → answer → one tiny action.
+  Behavior matches docs/EXAMPLES.md example #1 almost word-for-word.
+- **Bug found & fixed:** with all four schema fields required, the model
+  leaked self-correction chatter into the `not_today` string (e.g.
+  `"...today.}{\""`). Making `default` and `not_today` optional
+  (`required: ["kind","text"]`) fixed it — two clean turns after the change.
+
+### Files touched
+- `server.js` — RESPONSE_SCHEMA: `default`/`not_today` now optional
+
+### Verification
+- Live two-turn conversation, clean JSON both turns. Frontend already
+  guards both fields with falsy checks, so no UI change needed.
+
+### Open items / next steps
+- Real dogfooding by the user in the browser (http://localhost:3456).
+- Still no git remote — branch unpushed.
+
+---
 
 **Branch:** `claude/init/todo-new`
 

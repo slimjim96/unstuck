@@ -50,14 +50,14 @@ const RESPONSE_SCHEMA = {
     },
     default: {
       type: "string",
-      description: "When kind=question: the default answer used if the user doesn't know. Empty string otherwise.",
+      description: "Only when kind=question: the default answer used if the user doesn't know. Omit otherwise.",
     },
     not_today: {
       type: "string",
-      description: "The scary part explicitly forbidden today (e.g. 'You are NOT calling today'), or empty string.",
+      description: "Only when there is a scary part to explicitly forbid today (e.g. 'You are NOT calling today'). One short sentence, nothing else. Omit otherwise.",
     },
   },
-  required: ["kind", "text", "default", "not_today"],
+  required: ["kind", "text"],
   additionalProperties: false,
 };
 

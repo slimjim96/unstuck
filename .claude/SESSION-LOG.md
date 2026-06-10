@@ -4,6 +4,54 @@
 
 ---
 
+## 2026-06-10 (cont. 5) — Gentle witness + Trail lens (TED roadmap done)
+
+**Branch:** `claude/feat/3d-lens`
+
+### What was done
+- **Witness** (system prompt change — the careful one):
+  - snapshot() now sends created/touched/done at day precision (cheap
+    tokens, enough signal). Model still never sets them (schema has no
+    timestamp props; applyOps wouldn't apply them anyway).
+  - GRAPH_SYSTEM_PROMPT rule 10: one observation max, only when a stall
+    is clearly the useful thing, evidence-based, counter-evidence
+    offered, never diagnosing; re-split-but-stuck → lower the FEAR bar
+    not the size bar; no observations on fresh maps or right after one.
+  - docs/EXAMPLES.md: "The Gentle Witness" spec section (stalled map →
+    ideal reply; fresh map → zero observations; hard limits list).
+  - Live-tested on a second server instance (PORT=3457, user's 3456
+    untouched): 3 opus calls. Fresh map → clean decomposition, no
+    pattern talk. Stalled map ("what should I look at today?") → reply
+    almost word-for-word the spec ("the garage is clearly rolling…
+    hasn't been touched since June 3rd… not that you're avoiding it").
+    Turn after observation → celebration only, no repeat.
+- **Trail lens** (`public/trail.html`): done nodes grouped by doneAt day,
+  newest first, pre-timestamp dones under "Earlier", cumulative count
+  ("5 tiny steps done since sat, jun 6"), footer "Only what happened.
+  No streaks, no gaps, no guilt." Pure HTML/CSS (no canvas → theme is
+  CSS-vars only). Same lens contracts (localStorage, live-sync,
+  ?sample=, theme). Cross-linked from Map/Space/Timeline topbars.
+  README + CLAUDE.md updated.
+
+### Verification
+- Witness: the 3 live calls above (the graph-prompt equivalent of the
+  10-example eyeball test; focus-lens SYSTEM_PROMPT untouched).
+- Trail: CDP driver, 10/10 — empty state, count, subtitle, day order,
+  Earlier last, open nodes excluded, snapshot day-precision fields.
+  Dark + light screenshots eyeballed. node --check server.js passes.
+
+### Open items / next steps
+- **USER DIRECTION for next phase: turn the POC into a real app** with
+  seamless integration from Focus to the other elements. Focus today is
+  an island: separate endpoint (/api/next-step), no graph awareness, no
+  persistence. Likely shape: Focus becomes a projection of the graph
+  (pull the recommended next node, mark done back into the graph),
+  shared nav/theme header, then the bigger questions — accounts/sync,
+  a real datastore, deploy target, mobile. Discuss architecture first.
+- API key rotation STILL pending (user reminder, day 2).
+
+---
+
 ## 2026-06-10 (cont. 4) — Label-aware layout; 3D titles in front
 
 **Branch:** `claude/feat/3d-lens`

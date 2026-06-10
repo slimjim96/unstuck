@@ -288,18 +288,27 @@
   }
 
   function applyOps(ops) {
+    // timestamps are machine-set, never model-set: the raw material for
+    // spotting stalled things later (not sent in the snapshot yet)
+    const now = new Date().toISOString();
     for (const o of ops) {
       try {
         if (o.op === "add_node" && o.id && !cy.getElementById(o.id).length) {
           cy.add({ group: "nodes",
             data: { id: o.id, label: o.label || o.id, type: o.type || "task", mode: o.mode || "step",
-                    minutes: o.minutes, when: o.when, detail: o.detail, status: o.status || "open" },
+                    minutes: o.minutes, when: o.when, detail: o.detail, status: o.status || "open",
+                    createdAt: now, touchedAt: now },
             position: placeNear(o.id, ops) });
         } else if (o.op === "update_node") {
           const n = cy.getElementById(o.id);
-          if (n.length) ["label","type","mode","minutes","when","detail","status"].forEach((k) => {
-            if (o[k] !== undefined) n.data(k, o[k]);
-          });
+          if (n.length) {
+            ["label","type","mode","minutes","when","detail","status"].forEach((k) => {
+              if (o[k] !== undefined) n.data(k, o[k]);
+            });
+            n.data("touchedAt", now);
+            if (o.status === "done") n.data("doneAt", now);
+            else if (o.status === "open") n.removeData("doneAt");
+          }
         } else if (o.op === "remove_node") {
           cy.getElementById(o.id).remove();
         } else if (o.op === "add_edge" && cy.getElementById(o.source).length && cy.getElementById(o.target).length) {
@@ -376,6 +385,7 @@
     $(id).addEventListener("change", () => {
       if (!selected) return;
       apply(selected, $(id).value.trim());
+      selected.data("touchedAt", new Date().toISOString());
       showNodeBox(selected); save();
     });
   }
@@ -391,7 +401,15 @@
 
   $("toggle-done").addEventListener("click", () => {
     if (!selected) return;
-    selected.data("status", selected.data("status") === "done" ? "open" : "done");
+    const now = new Date().toISOString();
+    if (selected.data("status") === "done") {
+      selected.data("status", "open");
+      selected.removeData("doneAt");
+    } else {
+      selected.data("status", "done");
+      selected.data("doneAt", now);
+    }
+    selected.data("touchedAt", now);
     showNodeBox(selected); save();
   });
   $("delete").addEventListener("click", () => {
@@ -403,8 +421,10 @@
     const v = prompt("Label for the new node:");
     if (!v) return;
     const id = "me-" + Date.now().toString(36);
+    const now = new Date().toISOString();
     cy.add({ group: "nodes",
-      data: { id, label: v.trim(), type: "task", mode: "step", status: "open" },
+      data: { id, label: v.trim(), type: "task", mode: "step", status: "open",
+              createdAt: now, touchedAt: now },
       position: { x: cy.width() / 2, y: cy.height() / 2 } });
     save();
   });
@@ -426,7 +446,9 @@
       cy.elements().remove();
       messages = [];
       hideNodeBox();
-      cy.add(sample.graph.nodes.map((n) => ({ group: "nodes", data: { status: "open", ...n } })));
+      const now = new Date().toISOString();
+      cy.add(sample.graph.nodes.map((n) => ({ group: "nodes",
+        data: { status: "open", createdAt: now, touchedAt: now, ...n } })));
       cy.add(sample.graph.edges.map((ed) => ({ group: "edges",
         data: { id: ed.source + "->" + ed.target + ":" + ed.kind, ...ed } })));
       cy.layout({ name: "cose", animate: true, padding: 60 }).run();

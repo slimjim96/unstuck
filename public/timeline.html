@@ -70,11 +70,12 @@
     dark: { step: "#4fc3a1", time: "#d9a05b", mixed: "#9d8cff", stuck: "#d97b7b",
             plain: "#5a6b7d", done: "#3a4756", axis: "#3a4756", tick: "#8b97a5",
             today: "#4fc3a1", stem: "#2a3442", label: "#e8ecf1", labelDone: "#8b97a5",
-            meta: "#8b97a5", overdue: "#d97b7b" },
+            // a passed date gets calm amber, not alarm red — README: no red badges
+            meta: "#8b97a5", overdue: "#d9a05b" },
     light: { step: "#1f9d7e", time: "#b87b2e", mixed: "#7263d2", stuck: "#c45c5c",
              plain: "#8595a5", done: "#c2ccd6", axis: "#b7c2cc", tick: "#5f6e7d",
              today: "#1f9d7e", stem: "#d4dde4", label: "#1c2733", labelDone: "#8595a5",
-             meta: "#5f6e7d", overdue: "#c45c5c" },
+             meta: "#5f6e7d", overdue: "#b87b2e" },
   };
   let theme = localStorage.getItem("unstuck.theme") || "dark";
   const P = () => PALETTES[theme];
@@ -217,7 +218,7 @@
       const meta = [fmtDay(new Date(it.t))];
       if (it.minutes) meta.push("~" + it.minutes + " min");
       if (it.status === "done") meta.push("done");
-      else if (it.t < today) meta.push("overdue");
+      else if (it.t < today) meta.push("date passed");
       it._meta = meta.join(" · ");
       it._overdue = it.status !== "done" && it.t < today;
       const w = Math.max(it._label.length, it._meta.length) * 6 + 12;

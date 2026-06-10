@@ -91,7 +91,9 @@ user's current arrangement and never fights it.
 Nodes: `id`, `label` (short), `type` (`stuck | task | step | event`),
 `mode` (`step | time | mixed` — step-based vs time-based, the two axes
 most tasks live on), `minutes` (effort estimate), `when` (date, for
-time-based), `status` (`open | done`), `detail`.
+time-based), `status` (`open | done`), `detail`. The client also stamps
+`createdAt` / `touchedAt` / `doneAt` (ISO timestamps, machine-set, never
+model-set) — the raw material for noticing stalled things later.
 
 Edges: `kind` = `part_of` (decomposition), `blocks` (dependency),
 `related` (same life area).

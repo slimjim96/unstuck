@@ -34,10 +34,57 @@
     for (const fn of listeners) fn(t);
   }
 
+  // ---- the shared graph: server-canonical since Phase 2 --------------------
+  // localStorage's old unstuck.graph is read once as a migration source.
+  const clientId = Math.random().toString(36).slice(2, 10);
+
+  async function replaceGraph(elements) {
+    await fetch("/api/graph", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ elements, client: clientId }),
+    });
+  }
+
+  async function loadGraph() {
+    const res = await fetch("/api/graph");
+    if (!res.ok) throw new Error("couldn't load the graph from the server");
+    let elements = (await res.json()).elements || [];
+    if (!elements.length && !localStorage.getItem("unstuck.migrated")) {
+      const legacy = JSON.parse(localStorage.getItem("unstuck.graph") || "[]");
+      if (legacy.length) {
+        await replaceGraph(legacy);
+        elements = legacy;
+      }
+    }
+    localStorage.setItem("unstuck.migrated", "1");
+    return elements;
+  }
+
+  async function sendOps(ops) {
+    if (!ops || !ops.length) return;
+    await fetch("/api/ops", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ops, client: clientId }),
+    });
+  }
+
+  // SSE: fires for changes made by OTHER clients (own ops are applied locally)
+  function onGraphChange(fn) {
+    const es = new EventSource("/api/events");
+    es.onmessage = (e) => {
+      const ev = JSON.parse(e.data);
+      if (ev.type !== "hello" && ev.client !== clientId) fn(ev);
+    };
+    return es;
+  }
+
   window.Unstuck = {
     get theme() { return theme; },
     palette: () => PALETTES[theme],
     onThemeChange: (fn) => listeners.push(fn),
+    clientId, loadGraph, sendOps, replaceGraph, onGraphChange,
   };
 
   const NAV = [

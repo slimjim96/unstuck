@@ -52,8 +52,7 @@
 <script>
   const sampleParam = new URLSearchParams(location.search).get("sample");
 
-  function loadLocal() {
-    const elements = JSON.parse(localStorage.getItem("unstuck.graph") || "[]");
+  function fromElements(elements) {
     const nodes = [];
     for (const el of elements) {
       const d = el.data || {};
@@ -69,7 +68,7 @@
       const res = await fetch("/samples/" + sampleParam + ".json");
       if (res.ok) return (await res.json()).graph.nodes;
     }
-    return loadLocal();
+    return fromElements(await Unstuck.loadGraph());
   }
 
   function dayLabel(iso) {
@@ -131,9 +130,12 @@
     }
   }
 
-  window.addEventListener("storage", (e) => {
-    if (e.key === "unstuck.graph" && !sampleParam) { nodes = loadLocal(); render(); }
-  });
+  if (!sampleParam) {
+    Unstuck.onGraphChange(async () => {
+      nodes = fromElements(await Unstuck.loadGraph());
+      render();
+    });
+  }
 
   loadData().then((n) => { nodes = n; render(); });
 </script>

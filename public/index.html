@@ -179,7 +179,7 @@
 
   const cy = cytoscape({
     container: $("cy"),
-    elements: JSON.parse(localStorage.getItem("unstuck.graph") || "[]"),
+    elements: [], // server-canonical since Phase 2 — loaded just below
     wheelSensitivity: 0.25,
     style: [
       { selector: "node", style: {
@@ -210,26 +210,24 @@
   });
 
   // ---- persistence ----
+  // The graph lives on the server (one write path: ops). Only the chat
+  // panel's conversation stays client-side.
   function save() {
-    // jsons() keeps node positions and edge data — exactly what reload needs
-    localStorage.setItem("unstuck.graph", JSON.stringify(cy.elements().jsons()));
     localStorage.setItem("unstuck.messages", JSON.stringify(messages));
   }
 
-  // graph snapshot for the model: data only, no positions; timestamps go in
-  // at day precision — evidence for the gentle-witness rule, cheap in tokens
-  function snapshot() {
-    const day = (iso) => (iso ? iso.slice(0, 10) : undefined);
-    return {
-      nodes: cy.nodes().map((n) => {
-        const d = n.data();
-        return { id: d.id, label: d.label, type: d.type, mode: d.mode,
-                 minutes: d.minutes, when: d.when, detail: d.detail, status: d.status || "open",
-                 created: day(d.createdAt), touched: day(d.touchedAt), done: day(d.doneAt) };
-      }),
-      edges: cy.edges().map((e) => ({ source: e.data("source"), target: e.data("target"), kind: e.data("kind") })),
-    };
-  }
+  Unstuck.loadGraph().then((els) => { cy.add(els); });
+
+  // another client (tab or device) changed the graph — refetch and re-render
+  Unstuck.onGraphChange(async () => {
+    const res = await fetch("/api/graph");
+    const fresh = (await res.json()).elements;
+    const selId = selected && selected.id();
+    cy.elements().remove();
+    cy.add(fresh);
+    if (selId && cy.getElementById(selId).length) showNodeBox(cy.getElementById(selId));
+    else hideNodeBox();
+  });
 
   // ---- chat panel ----
   function addMsg(kind, text) {
@@ -255,27 +253,26 @@
     return { x: anchor.x + (Math.random() - 0.5) * 160, y: anchor.y + 60 + (Math.random() - 0.5) * 80 };
   }
 
+  // Local render of model-proposed ops. The server is the authority (and the
+  // only stamper of timestamps) — the caller forwards these same ops to
+  // /api/ops; the position this client chose rides along on the op.
   function applyOps(ops) {
-    // timestamps are machine-set, never model-set: the raw material for
-    // spotting stalled things later (not sent in the snapshot yet)
-    const now = new Date().toISOString();
     for (const o of ops) {
       try {
         if (o.op === "add_node" && o.id && !cy.getElementById(o.id).length) {
+          const pos = placeNear(o.id, ops);
+          o.x = pos.x; o.y = pos.y;
           cy.add({ group: "nodes",
             data: { id: o.id, label: o.label || o.id, type: o.type || "task", mode: o.mode || "step",
-                    minutes: o.minutes, when: o.when, detail: o.detail, status: o.status || "open",
-                    createdAt: now, touchedAt: now },
-            position: placeNear(o.id, ops) });
+                    minutes: o.minutes, when: o.when, detail: o.detail, status: o.status || "open" },
+            position: pos });
         } else if (o.op === "update_node") {
           const n = cy.getElementById(o.id);
           if (n.length) {
             ["label","type","mode","minutes","when","detail","status"].forEach((k) => {
-              if (o[k] !== undefined) n.data(k, o[k]);
+              if (o[k] !== undefined && o[k] !== null) n.data(k, o[k]);
             });
-            n.data("touchedAt", now);
-            if (o.status === "done") n.data("doneAt", now);
-            else if (o.status === "open") n.removeData("doneAt");
+            if (o.status === "open") n.removeData("doneAt");
           }
         } else if (o.op === "remove_node") {
           cy.getElementById(o.id).remove();
@@ -288,7 +285,6 @@
         }
       } catch (e) { console.warn("op failed", o, e); }
     }
-    save();
   }
 
   // ---- talking to the server ----
@@ -300,13 +296,14 @@
       const res = await fetch("/api/graph-step", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ messages, graph: snapshot() }),
+        body: JSON.stringify({ messages }),
       });
       const out = await res.json();
       if (!res.ok) throw new Error(out.error || "Something went wrong.");
       messages.push({ role: "assistant", content: out.reply });
       addMsg("ai", out.reply);
       applyOps(out.operations || []);
+      Unstuck.sendOps(out.operations || []);
     } catch (err) {
       messages.pop();
       addMsg("err", err.message);
@@ -332,7 +329,8 @@
 
   cy.on("tap", "node", (e) => showNodeBox(e.target));
   cy.on("tap", (e) => { if (e.target === cy) hideNodeBox(); });
-  cy.on("dragfree", "node", save);
+  cy.on("dragfree", "node", (e) => Unstuck.sendOps([{ op: "move_node", id: e.target.id(),
+    x: e.target.position().x, y: e.target.position().y }]));
 
   // ---- buttons ----
   $("send").addEventListener("click", () => {
@@ -347,59 +345,57 @@
     if (selected && !busy)
       send("Split \"" + selected.data("label") + "\" (id: " + selected.id() + ") smaller — it's still too big.");
   });
-  // every node field is editable; empty optional fields are removed from the
-  // data so they vanish from the model snapshot instead of going ""
-  function bindField(id, apply) {
-    $(id).addEventListener("change", () => {
-      if (!selected) return;
-      apply(selected, $(id).value.trim());
-      selected.data("touchedAt", new Date().toISOString());
-      showNodeBox(selected); save();
-    });
+  // every node field is editable; an edit applies locally for instant UI and
+  // goes to the server as an update_node op (null = clear the field)
+  function fieldOp(key, v) {
+    if (!selected) return;
+    if (v === null) selected.removeData(key); else selected.data(key, v);
+    Unstuck.sendOps([{ op: "update_node", id: selected.id(), [key]: v }]);
+    showNodeBox(selected);
   }
-  bindField("node-title", (n, v) => { if (v) n.data("label", v); });
-  bindField("node-detail", (n, v) => { if (v) n.data("detail", v); else n.removeData("detail"); });
-  bindField("node-when", (n, v) => { if (v) n.data("when", v); else n.removeData("when"); });
-  bindField("node-minutes", (n, v) => {
-    const m = parseInt(v, 10);
-    if (m > 0) n.data("minutes", m); else n.removeData("minutes");
+  $("node-title").addEventListener("change", () => {
+    const v = $("node-title").value.trim();
+    if (v) fieldOp("label", v); else showNodeBox(selected); // never blank a title
   });
-  bindField("node-type", (n, v) => n.data("type", v));
-  bindField("node-mode", (n, v) => n.data("mode", v));
+  $("node-detail").addEventListener("change", () => fieldOp("detail", $("node-detail").value.trim() || null));
+  $("node-when").addEventListener("change", () => fieldOp("when", $("node-when").value || null));
+  $("node-minutes").addEventListener("change", () => {
+    const m = parseInt($("node-minutes").value, 10);
+    fieldOp("minutes", m > 0 ? m : null);
+  });
+  $("node-type").addEventListener("change", () => fieldOp("type", $("node-type").value));
+  $("node-mode").addEventListener("change", () => fieldOp("mode", $("node-mode").value));
 
   $("toggle-done").addEventListener("click", () => {
     if (!selected) return;
-    const now = new Date().toISOString();
-    if (selected.data("status") === "done") {
-      selected.data("status", "open");
-      selected.removeData("doneAt");
-    } else {
-      selected.data("status", "done");
-      selected.data("doneAt", now);
-    }
-    selected.data("touchedAt", now);
-    showNodeBox(selected); save();
+    const status = selected.data("status") === "done" ? "open" : "done";
+    selected.data("status", status);
+    if (status === "open") selected.removeData("doneAt");
+    Unstuck.sendOps([{ op: "update_node", id: selected.id(), status }]);
+    showNodeBox(selected);
   });
   $("delete").addEventListener("click", () => {
     if (!selected) return;
-    selected.remove(); hideNodeBox(); save();
+    const id = selected.id();
+    selected.remove(); hideNodeBox();
+    Unstuck.sendOps([{ op: "remove_node", id }]);
   });
 
   $("add-node").addEventListener("click", () => {
     const v = prompt("Label for the new node:");
     if (!v) return;
     const id = "me-" + Date.now().toString(36);
-    const now = new Date().toISOString();
+    const pos = { x: cy.width() / 2, y: cy.height() / 2 };
     cy.add({ group: "nodes",
-      data: { id, label: v.trim(), type: "task", mode: "step", status: "open",
-              createdAt: now, touchedAt: now },
-      position: { x: cy.width() / 2, y: cy.height() / 2 } });
-    save();
+      data: { id, label: v.trim(), type: "task", mode: "step", status: "open" },
+      position: pos });
+    Unstuck.sendOps([{ op: "add_node", id, label: v.trim(), type: "task", mode: "step",
+                       x: pos.x, y: pos.y }]);
   });
 
   // cose tuned so titles get room: node boxes include the label bounds and
   // edges aim longer than a wrapped label is wide (text-max-width 110)
-  function runLayout() {
+  function runLayout(onSettled) {
     if (!cy.nodes().length) return;
     cy.layout({
       name: "cose", animate: true, padding: 60,
@@ -407,7 +403,9 @@
       idealEdgeLength: () => 130,
       componentSpacing: 100,
     }).run();
-    setTimeout(save, 1500);
+    // once the animation settles, persist the new arrangement
+    setTimeout(onSettled || (() => Unstuck.sendOps(cy.nodes().map((n) => ({
+      op: "move_node", id: n.id(), x: n.position().x, y: n.position().y })))), 1600);
   }
 
   $("arrange").addEventListener("click", runLayout);
@@ -422,14 +420,13 @@
       if (!res.ok) throw new Error("Sample not found — run scripts/generate-samples.mjs first.");
       const sample = await res.json();
       cy.elements().remove();
-      messages = [];
+      messages = []; save();
       hideNodeBox();
-      const now = new Date().toISOString();
-      cy.add(sample.graph.nodes.map((n) => ({ group: "nodes",
-        data: { status: "open", createdAt: now, touchedAt: now, ...n } })));
+      cy.add(sample.graph.nodes.map((n) => ({ group: "nodes", data: { status: "open", ...n } })));
       cy.add(sample.graph.edges.map((ed) => ({ group: "edges",
         data: { id: ed.source + "->" + ed.target + ":" + ed.kind, ...ed } })));
-      runLayout();
+      // once the layout settles, replace the server graph wholesale
+      runLayout(() => Unstuck.replaceGraph(cy.elements().jsons()));
       $("chat").innerHTML = "";
       addMsg("ai", "Loaded the “" + sample.name + "” sample map. Drag things around, mark steps done, or keep talking — I can see the map as it is now.");
     } catch (err) {
@@ -442,6 +439,7 @@
   $("clear").addEventListener("click", () => {
     if (confirm("Clear the whole map and conversation?")) {
       cy.elements().remove(); messages = []; hideNodeBox(); save();
+      Unstuck.replaceGraph([]);
       $("chat").innerHTML = "";
       addMsg("ai", "Fresh map. Dump something you keep avoiding.");
     }

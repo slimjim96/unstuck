@@ -29,21 +29,31 @@ witness, Trail, Phase 1 Focus integration)
 
 - `docs/EXAMPLES.md` — the real spec: 10 stuck-thoughts + ideal responses;
   also the prompt-engineering data. Change behavior here first.
-- `server.js` — entire backend: static files + `/api/next-step` (focus
-  lens) + `/api/graph-step` (map lens) Claude proxies. Both system prompts
-  and both response schemas live here.
+- `server.js` — entire backend: owns the canonical graph
+  (`data/graph.json` + append-only `data/events.ndjson`, gitignored).
+  GET `/api/graph`, POST `/api/ops` (the single write path — user edits
+  and AI proposals alike; the server is the only timestamp stamper),
+  PUT `/api/graph` (replace: migration/samples/clear), GET `/api/events`
+  (SSE live-sync), POST `/api/graph-step` (Claude proxy; builds the
+  model's day-precision snapshot from the server graph). The graph
+  system prompt and operations schema live here.
 - `public/index.html` — the Map: Cytoscape.js graph canvas + chat panel.
-  The only editing surface; owns the localStorage graph (`unstuck.graph`).
+  The main editing surface; every edit goes to the server as an op.
+  (localStorage keeps only the chat history and theme; the old
+  `unstuck.graph` key is read once as a migration source by app.js.)
 - `public/assets/app.js` + `app.css` — shared runtime: theme (pre-paint,
   persisted, cross-tab), the canvas color palette (`Unstuck.palette()`),
-  and the nav injected into `<nav data-nav>`. Own code, not a dependency.
+  the nav injected into `<nav data-nav>`, and the graph client
+  (`loadGraph` with one-time localStorage migration, `sendOps`,
+  `replaceGraph`, `onGraphChange` SSE with own-echo suppression).
 - `public/space.html` — the Space lens: read-only 3D view (3d-force-graph),
-  reads the same localStorage graph, live-syncs via the storage event.
+  reads the server graph, live-syncs via SSE.
 - `public/timeline.html` — the Timeline lens: read-only date axis (hand-
-  rolled SVG, no library) for nodes with `when`; same localStorage graph,
-  same live-sync, `?sample=` supported.
+  rolled SVG, no library) for nodes with `when`; server graph, SSE
+  live-sync, `?sample=` supported.
 - `public/trail.html` — the Trail lens: read-only evidence view of done
-  nodes grouped by `doneAt` day, cumulative count, anti-streak by design.
+  nodes grouped by `doneAt` day, cumulative count, anti-streak by design;
+  server graph, SSE live-sync.
 - `public/focus.html` — the Focus lens: one-card-at-a-time projection of
   the graph. Deterministic picker (open, unblocked step; stalest cluster,
   then smallest minutes); "I did it" writes done+doneAt back to the shared

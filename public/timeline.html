@@ -64,9 +64,8 @@
     return Number.isNaN(t) ? null : new Date(t).setHours(0, 0, 0, 0);
   }
 
-  // Same-origin localStorage: the Map page saves cy.elements().jsons() here.
-  function loadLocal() {
-    const elements = JSON.parse(localStorage.getItem("unstuck.graph") || "[]");
+  // server-canonical graph (cytoscape element JSON) → node list
+  function fromElements(elements) {
     const nodes = [];
     for (const elem of elements) {
       const d = elem.data || {};
@@ -85,7 +84,7 @@
         return { nodes: sample.graph.nodes };
       }
     }
-    return loadLocal();
+    return fromElements(await Unstuck.loadGraph());
   }
 
   function nodeColor(n) {
@@ -222,11 +221,11 @@
     resizeTimer = setTimeout(render, 120);
   });
 
-  // Live-sync (localStorage mode only): the storage event fires when the
-  // Map, open in another tab, saves.
+  // Live-sync (live mode only): SSE fires when any other client commits.
   if (!sampleParam) {
-    window.addEventListener("storage", (e) => {
-      if (e.key === "unstuck.graph") { data = loadLocal(); render(); }
+    Unstuck.onGraphChange(async () => {
+      data = fromElements(await Unstuck.loadGraph());
+      render();
     });
   }
 </script>

@@ -68,9 +68,8 @@
     };
   }
 
-  // Same-origin localStorage: the Map page saves cy.elements().jsons() here.
-  function loadLocal() {
-    const elements = JSON.parse(localStorage.getItem("unstuck.graph") || "[]");
+  // server-canonical graph (cytoscape element JSON) → {nodes, links}
+  function fromElements(elements) {
     const nodes = [], edges = [];
     for (const el of elements) {
       const d = el.data || {};
@@ -92,7 +91,7 @@
         return toData(sample.graph.nodes, sample.graph.edges);
       }
     }
-    return loadLocal();
+    return fromElements(await Unstuck.loadGraph());
   }
 
   function nodeColor(n) {
@@ -177,15 +176,12 @@
     e.target.textContent = treeMode ? "Free layout" : "Tree layout";
   });
 
-  // Live-sync (localStorage mode only): the storage event fires when the
-  // Map, open in another tab, saves.
+  // Live-sync (live mode only): SSE fires when any other client commits.
   if (!sampleParam) {
-    window.addEventListener("storage", (e) => {
-      if (e.key === "unstuck.graph") {
-        const fresh = loadLocal();
-        document.getElementById("empty").classList.toggle("show", fresh.nodes.length === 0);
-        Graph.graphData(fresh);
-      }
+    Unstuck.onGraphChange(async () => {
+      const fresh = fromElements(await Unstuck.loadGraph());
+      document.getElementById("empty").classList.toggle("show", fresh.nodes.length === 0);
+      Graph.graphData(fresh);
     });
   }
 </script>

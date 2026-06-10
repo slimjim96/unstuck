@@ -162,9 +162,8 @@
   let current = null;        // node id on the card
   let splitTarget = null;
 
-  // ---- the shared graph (same localStorage the Map saves) ----
-  function loadElements() { return JSON.parse(localStorage.getItem("unstuck.graph") || "[]"); }
-  function saveElements(els) { localStorage.setItem("unstuck.graph", JSON.stringify(els)); }
+  // ---- the shared graph (server-canonical; refreshed via SSE) ----
+  let elements = [];
 
   function graphFrom(els) {
     const nodes = [], edges = [];
@@ -174,18 +173,6 @@
       else if (d.id) nodes.push(d);
     }
     return { nodes, edges };
-  }
-
-  // same day-precision snapshot the Map sends
-  function snapshot(els) {
-    const g = graphFrom(els);
-    const day = (iso) => (iso ? iso.slice(0, 10) : undefined);
-    return {
-      nodes: g.nodes.map((d) => ({ id: d.id, label: d.label, type: d.type, mode: d.mode,
-        minutes: d.minutes, when: d.when, detail: d.detail, status: d.status || "open",
-        created: day(d.createdAt), touched: day(d.touchedAt), done: day(d.doneAt) })),
-      edges: g.edges,
-    };
   }
 
   // ---- the deterministic picker (hybrid contract: no API call to pick) ----
@@ -257,8 +244,7 @@
 
   function refresh(opts = {}) {
     if (!opts.keepSkips) excluded = new Set();
-    const els = loadElements();
-    const g = graphFrom(els);
+    const g = graphFrom(elements);
     if (!g.nodes.length) { show("capture"); $("stuck").focus(); return; }
     const picked = pick(g, excluded);
     if (picked.step) { showStep(picked.step, picked, opts.context); return; }
@@ -281,25 +267,26 @@
     return { x: base.x + (Math.random() - 0.5) * 160, y: base.y + 60 + (Math.random() - 0.5) * 80 };
   }
 
-  function applyOps(ops, els) {
-    const now = new Date().toISOString();
+  // Local apply of model ops (server is the authority and the only stamper —
+  // the caller forwards the same ops, positions riding along, to /api/ops).
+  function applyOps(ops) {
+    const els = elements;
     const node = (id) => els.find((e) => e.data && e.data.id === id && !e.data.source);
     for (const o of ops) {
       try {
         if (o.op === "add_node" && o.id && !node(o.id)) {
+          const pos = placeNear(o.id, ops, els);
+          o.x = pos.x; o.y = pos.y;
           els.push({ group: "nodes",
             data: { id: o.id, label: o.label || o.id, type: o.type || "task", mode: o.mode || "step",
-                    minutes: o.minutes, when: o.when, detail: o.detail, status: o.status || "open",
-                    createdAt: now, touchedAt: now },
-            position: placeNear(o.id, ops, els) });
+                    minutes: o.minutes, when: o.when, detail: o.detail, status: o.status || "open" },
+            position: pos });
         } else if (o.op === "update_node") {
           const n = node(o.id);
           if (n) {
             for (const k of ["label", "type", "mode", "minutes", "when", "detail", "status"])
               if (o[k] !== undefined) n.data[k] = o[k];
-            n.data.touchedAt = now;
-            if (o.status === "done") n.data.doneAt = now;
-            else if (o.status === "open") delete n.data.doneAt;
+            if (o.status === "open") delete n.data.doneAt;
           }
         } else if (o.op === "remove_node") {
           const i = els.findIndex((e) => e.data && (e.data.id === o.id || e.data.source === o.id || e.data.target === o.id));
@@ -319,7 +306,6 @@
         }
       } catch (e) { console.warn("op failed", o, e); }
     }
-    saveElements(els);
   }
 
   // ---- the model (split / capture / questions only — never to pick) ----
@@ -327,16 +313,16 @@
     convo.push({ role: "user", content: userText });
     setBusy(true);
     try {
-      const els = loadElements();
       const res = await fetch("/api/graph-step", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ messages: convo, graph: snapshot(els) }),
+        body: JSON.stringify({ messages: convo }),
       });
       const out = await res.json();
       if (!res.ok) throw new Error(out.error || "Something went wrong.");
       convo.push({ role: "assistant", content: out.reply });
-      applyOps(out.operations || [], els);
+      applyOps(out.operations || []);
+      Unstuck.sendOps(out.operations || []);
       return out;
     } catch (err) {
       convo.pop();
@@ -351,9 +337,9 @@
     const ops = out.operations || [];
     if (!ops.length) { $("ask-text").textContent = out.reply; show("ask"); $("answer").value = ""; $("answer").focus(); return; }
     const added = new Set(ops.filter((o) => o.op === "add_node").map((o) => o.id));
-    const g = pick(graphFrom(loadElements()), new Set());
-    const fresh = pick(graphFrom(loadElements()),
-      new Set(graphFrom(loadElements()).nodes.filter((n) => !added.has(n.id)).map((n) => n.id)));
+    const all = graphFrom(elements);
+    const g = pick(all, new Set());
+    const fresh = pick(all, new Set(all.nodes.filter((n) => !added.has(n.id)).map((n) => n.id)));
     if (fresh.step) showStep(fresh.step, fresh, out.reply);
     else if (g.step) showStep(g.step, g, out.reply);
     else refresh({ context: out.reply });
@@ -373,12 +359,11 @@
 
   $("did-it").addEventListener("click", () => {
     if (!current) return;
-    const els = loadElements();
-    const el = els.find((e) => e.data && e.data.id === current && !e.data.source);
+    const el = elements.find((e) => e.data && e.data.id === current && !e.data.source);
     if (el) {
-      const now = new Date().toISOString();
-      el.data.status = "done"; el.data.doneAt = now; el.data.touchedAt = now;
-      saveElements(els);
+      el.data.status = "done";
+      el.data.doneAt = new Date().toISOString(); // local hint; server stamps for real
+      Unstuck.sendOps([{ op: "update_node", id: current, status: "done" }]);
     }
     const LINES = [
       "Done. One less looming thing.",
@@ -392,8 +377,7 @@
 
   $("too-big").addEventListener("click", async () => {
     if (!current || busy) return;
-    const els = loadElements();
-    const el = els.find((e) => e.data && e.data.id === current && !e.data.source);
+    const el = elements.find((e) => e.data && e.data.id === current && !e.data.source);
     const label = el ? el.data.label : current;
     try { afterOps(await graphStep('Split "' + label + '" (id: ' + current + ") smaller — it's still too big.")); }
     catch (err) { fail(err.message); }
@@ -421,15 +405,15 @@
     catch (err) { fail(err.message); }
   });
 
-  // if another tab edits the graph while a step is showing, keep honest
-  window.addEventListener("storage", (e) => {
-    if (e.key !== "unstuck.graph" || !current) return;
-    const g = graphFrom(loadElements());
-    const n = g.nodes.find((x) => x.id === current);
+  // if another client edits the graph while a step is showing, keep honest
+  Unstuck.onGraphChange(async () => {
+    elements = await Unstuck.loadGraph();
+    if (!current || busy) return;
+    const n = graphFrom(elements).nodes.find((x) => x.id === current);
     if (!n || (n.status || "open") === "done") refresh();
   });
 
-  refresh();
+  Unstuck.loadGraph().then((els) => { elements = els; refresh(); });
 </script>
 </body>
 </html>

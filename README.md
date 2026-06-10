@@ -132,6 +132,12 @@ Kept on purpose: no build step, pinned CDN libraries, zero-dep server,
 and the keystone — the graph is the single source of truth, every view
 is a projection.
 
+**Status:** Phases 1 and 2 shipped (2026-06-10). The server owns the
+graph in `data/` (gitignored); every client speaks ops; lenses sync
+live over SSE across tabs *and* devices; the old localStorage graph
+migrates up automatically on first load. Remaining: Phase 3 (deploy,
+phone, PWA).
+
 ## Prototype Scope (v0)
 
 Prove the loop, nothing else:

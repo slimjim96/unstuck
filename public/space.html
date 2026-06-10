@@ -136,10 +136,17 @@
   }
 
   function makeLabel(n) {
+    const big = n.type === "stuck" || n.type === "task";
     const sprite = new SpriteText(n.status === "done" ? "✓ " + n.label : n.label);
     sprite.color = n.status === "done" ? P().labelDone : P().label;
-    sprite.textHeight = n.type === "stuck" || n.type === "task" ? 4 : 2.6;
-    sprite.position.y = n.type === "stuck" || n.type === "task" ? -8 : -5;
+    sprite.textHeight = big ? 4 : 2.6;
+    // sit fully below the sphere (radius ~ nodeRelSize·∛val ≈ 7.3 for big
+    // nodes) and skip depth testing so the title is never hidden behind
+    // its own sphere or other geometry
+    sprite.position.y = big ? -11 : -7;
+    sprite.material.depthTest = false;
+    sprite.material.depthWrite = false;
+    sprite.renderOrder = 2;
     return sprite;
   }
 

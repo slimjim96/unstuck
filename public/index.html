@@ -429,10 +429,20 @@
     save();
   });
 
-  $("arrange").addEventListener("click", () => {
-    if (cy.nodes().length) cy.layout({ name: "cose", animate: true, padding: 60 }).run();
+  // cose tuned so titles get room: node boxes include the label bounds and
+  // edges aim longer than a wrapped label is wide (text-max-width 110)
+  function runLayout() {
+    if (!cy.nodes().length) return;
+    cy.layout({
+      name: "cose", animate: true, padding: 60,
+      nodeDimensionsIncludeLabels: true,
+      idealEdgeLength: () => 130,
+      componentSpacing: 100,
+    }).run();
     setTimeout(save, 1500);
-  });
+  }
+
+  $("arrange").addEventListener("click", runLayout);
 
   $("sample").addEventListener("change", async (e) => {
     const which = e.target.value;
@@ -451,8 +461,7 @@
         data: { status: "open", createdAt: now, touchedAt: now, ...n } })));
       cy.add(sample.graph.edges.map((ed) => ({ group: "edges",
         data: { id: ed.source + "->" + ed.target + ":" + ed.kind, ...ed } })));
-      cy.layout({ name: "cose", animate: true, padding: 60 }).run();
-      setTimeout(save, 1500);
+      runLayout();
       $("chat").innerHTML = "";
       addMsg("ai", "Loaded the “" + sample.name + "” sample map. Drag things around, mark steps done, or keep talking — I can see the map as it is now.");
     } catch (err) {

@@ -4,6 +4,49 @@
 
 ---
 
+## 2026-06-10 (later still) — Timeline lens: dated nodes on a date axis
+
+**Branch:** `claude/feat/3d-lens`
+
+### What was done
+- Built the Timeline projection (pending since 2026-06-09):
+  `public/timeline.html` — read-only lens projecting nodes with a `when`
+  onto a horizontal date axis. Hand-rolled SVG, deliberately no CDN
+  library (a date axis IS reasonably hand-rollable; the CDN exception
+  exists for things that aren't).
+- Features: today marker; adaptive ticks (daily ≤21d span, weekly ≤130d,
+  monthly beyond); overdue = open + past date, flagged red; done dimmed
+  with ✓; label collisions handled by alternating above/below the axis
+  plus greedy lane stacking; tooltip with detail; resize re-render.
+- `when` parsed as a LOCAL date ("YYYY-MM-DD" via new Date(y,m-1,d)) —
+  Date.parse reads ISO dates as UTC, which shifts the day west of
+  Greenwich.
+- Same contracts as Space: reads `unstuck.graph` from localStorage,
+  live-syncs via the storage event (localStorage mode only), supports
+  `?sample=<name>`. Footer counts undated nodes that stay on the Map.
+- Cross-links: Map and Space topbars → Timeline; Timeline → Map/Space/
+  Focus. README v1 Direction + CLAUDE.md load-bearing files updated.
+
+### Verification (headless screenshot bar, per last session's lesson)
+- Headless Edge screenshots of three cases: a temporary date-rich sample
+  (overdue red, done dimmed, same-day collision stacked, today aligned,
+  weekly ticks — all correct), ship-app (1 dated node + today marker,
+  "8 undated" count), learn-ai (no dates → correct empty-state message).
+  Temp sample deleted after; samples/ remains model-output-only.
+- Server booted clean, killed afterwards, port 3456 verified free.
+
+### Files touched
+- `public/timeline.html` — new (the whole lens)
+- `public/index.html`, `public/space.html` — topbar links
+- `README.md`, `CLAUDE.md` — docs
+
+### Open items / next steps
+- User eyeball: 3D tuning round AND the new timeline against samples.
+- Possible later: timeline click → highlight node on the Map; dependency
+  view. API key rotation STILL pending (third reminder).
+
+---
+
 ## 2026-06-10 (later) — Fix: 3D view was blank; ESM + import map rewrite
 
 **Branch:** `claude/feat/3d-lens`

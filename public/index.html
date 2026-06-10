@@ -216,7 +216,12 @@
     localStorage.setItem("unstuck.messages", JSON.stringify(messages));
   }
 
-  Unstuck.loadGraph().then((els) => { cy.add(els); });
+  Unstuck.loadGraph().then((els) => {
+    cy.add(els);
+    // the graph arrives async since Phase 2, so fit explicitly — otherwise
+    // the viewport stays at the default origin (everything ends up top-left)
+    if (cy.nodes().length) cy.fit(undefined, 60);
+  });
 
   // another client (tab or device) changed the graph — refetch and re-render
   Unstuck.onGraphChange(async () => {
@@ -329,6 +334,20 @@
 
   cy.on("tap", "node", (e) => showNodeBox(e.target));
   cy.on("tap", (e) => { if (e.target === cy) hideNodeBox(); });
+
+  // double-click: center on the item; on empty canvas, fit the whole map
+  let lastTap = { t: 0, id: null };
+  cy.on("tap", (e) => {
+    const id = e.target === cy ? "__bg__" : e.target.id();
+    const now = Date.now();
+    if (now - lastTap.t < 350 && lastTap.id === id) {
+      if (e.target === cy) cy.animate({ fit: { padding: 60 } }, { duration: 300 });
+      else cy.animate({ center: { eles: e.target } }, { duration: 300 });
+      lastTap = { t: 0, id: null };
+    } else {
+      lastTap = { t: now, id };
+    }
+  });
   cy.on("dragfree", "node", (e) => Unstuck.sendOps([{ op: "move_node", id: e.target.id(),
     x: e.target.position().x, y: e.target.position().y }]));
 

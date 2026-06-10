@@ -16,7 +16,7 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 // Shape: cytoscape element JSON ({ group, data, position }) — exactly what
 // the lenses render, positions included (the user's arrangement is truth).
 
-const DATA_DIR = path.join(__dirname, "data");
+const DATA_DIR = process.env.UNSTUCK_DATA || path.join(__dirname, "data");
 const GRAPH_FILE = path.join(DATA_DIR, "graph.json");
 const EVENTS_FILE = path.join(DATA_DIR, "events.ndjson");
 fs.mkdirSync(DATA_DIR, { recursive: true });

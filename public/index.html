@@ -70,6 +70,14 @@
   #node-label { font-weight: 600; margin-bottom: 2px; }
   #node-meta { color: var(--muted); font-size: 0.82rem; margin-bottom: 8px; }
   #node-box .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  #node-box .when-row { align-items: center; margin-bottom: 8px; }
+  #node-box .when-row label { color: var(--muted); font-size: 0.82rem; }
+  #node-box input[type="date"] {
+    background: var(--card); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 8px; padding: 4px 8px; font: inherit; font-size: 0.82rem;
+    color-scheme: dark;
+  }
+  #node-box input[type="date"]:focus { border-color: var(--accent); outline: none; }
 
   #composer { border-top: 1px solid var(--line); padding: 12px 16px 16px; }
   #composer textarea {
@@ -125,6 +133,11 @@
   <div id="node-box">
     <div id="node-label"></div>
     <div id="node-meta"></div>
+    <div class="row when-row">
+      <label for="node-when">When</label>
+      <input type="date" id="node-when">
+      <button class="secondary" id="when-clear">No date</button>
+    </div>
     <div class="row">
       <button id="split">Split smaller</button>
       <button class="secondary" id="toggle-done">Done</button>
@@ -288,6 +301,7 @@
     if (n.data("when")) bits.push(n.data("when"));
     if (n.data("detail")) bits.push(n.data("detail"));
     $("node-meta").textContent = bits.join(" · ");
+    $("node-when").value = n.data("when") || "";
     $("toggle-done").textContent = n.data("status") === "done" ? "Reopen" : "Done";
     $("node-box").classList.add("show");
   }
@@ -310,6 +324,18 @@
     if (selected && !busy)
       send("Split \"" + selected.data("label") + "\" (id: " + selected.id() + ") smaller — it's still too big.");
   });
+  $("node-when").addEventListener("change", () => {
+    if (!selected) return;
+    const v = $("node-when").value;
+    if (v) selected.data("when", v); else selected.removeData("when");
+    showNodeBox(selected); save();
+  });
+  $("when-clear").addEventListener("click", () => {
+    if (!selected) return;
+    selected.removeData("when");
+    showNodeBox(selected); save();
+  });
+
   $("toggle-done").addEventListener("click", () => {
     if (!selected) return;
     selected.data("status", selected.data("status") === "done" ? "open" : "done");

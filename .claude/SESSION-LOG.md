@@ -4,6 +4,38 @@
 
 ---
 
+## 2026-06-10 (cont. 4) — Label-aware layout; 3D titles in front
+
+**Branch:** `claude/feat/3d-lens`
+
+### What was done
+- User: Map titles overlap; 3D titles hidden behind spheres.
+- Map: shared runLayout() — cose with nodeDimensionsIncludeLabels: true
+  (label bounds count as node size), idealEdgeLength 130 (> the 110px
+  wrapped-label width), componentSpacing 100. Used by Auto-arrange and
+  sample load.
+- Space: sprite labels moved fully below the sphere radius (-11/-7) and
+  given depthTest=false, depthWrite=false, renderOrder=2 — titles always
+  render in front of geometry.
+
+### Verification (CDP driver, throwaway, deleted)
+- Objective overlap metric: pairwise intersections of label-inclusive
+  boundingBoxes on build-shed (15 nodes) — tuned 1 vs old 18. Both
+  views screenshot-eyeballed; no console errors. (cose is random-init,
+  so the count can vary run to run — the metric is the comparison, not
+  the absolute number.)
+
+### Files touched
+- `public/index.html` — runLayout(); `public/space.html` — makeLabel()
+
+### Open items / next steps
+- Pattern-witness prompt change, done-trail lens (per TED roadmap).
+- 3D initial camera distance could be closer (labels tiny until you
+  zoom) — cosmetic, didn't touch.
+- API key rotation STILL pending.
+
+---
+
 ## 2026-06-10 (cont. 3) — Timestamps foundation + calm overdue
 
 **Branch:** `claude/feat/3d-lens`

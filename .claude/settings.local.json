@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($p = Start-Process node -ArgumentList \"C:\\\\projects\\\\_claude-projects\\\\todo-new\\\\server.js\" -WorkingDirectory \"C:\\\\projects\\\\_claude-projects\\\\todo-new\" -PassThru -WindowStyle Hidden; Start-Sleep -Seconds 1.5; try { $r = Invoke-WebRequest http://localhost:3456/ -UseBasicParsing; \"HTTP $\\($r.StatusCode\\), $\\($r.Content.Length\\) bytes, title ok: $\\($r.Content -match '<title>Unstuck</title>'\\)\"; $api = Invoke-WebRequest http://localhost:3456/api/next-step -Method POST -Body '{\"messages\":[]}' -ContentType 'application/json' -UseBasicParsing -SkipHttpErrorCheck; \"API validation: HTTP $\\($api.StatusCode\\) $\\($api.Content\\)\" } finally { Stop-Process $p -Force })"
+    ]
+  }
+}

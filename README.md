@@ -76,7 +76,10 @@ visualization is a projection of it.**
 - *Space view* — 3D lens (`3d-force-graph`, `/space.html`): orbit, zoom,
   fly to a node. Deliberately a *viewing* lens, not an editing surface —
   it reads the same saved graph and live-syncs when the Map changes.
-- *Timeline / dependency views* — later projections of the same data.
+- *Timeline view* — date-axis lens (`/timeline.html`): nodes with a `when`
+  land on a horizontal axis with a today marker; overdue things get flagged.
+  Read-only like Space — it reads the same saved graph and live-syncs.
+- *Dependency views* — later projections of the same data.
 
 **The contract: AI proposes, user disposes.** Claude returns graph
 *operations* (add/split/link/annotate); they land on the canvas; the user

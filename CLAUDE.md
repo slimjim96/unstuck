@@ -35,6 +35,9 @@ open http://localhost:3456)
   The only editing surface; owns the localStorage graph (`unstuck.graph`).
 - `public/space.html` — the Space lens: read-only 3D view (3d-force-graph),
   reads the same localStorage graph, live-syncs via the storage event.
+- `public/timeline.html` — the Timeline lens: read-only date axis (hand-
+  rolled SVG, no library) for nodes with `when`; same localStorage graph,
+  same live-sync, `?sample=` supported.
 - `public/focus.html` — the Focus lens: original one-card-at-a-time UI.
 
 ## Session Reading Order

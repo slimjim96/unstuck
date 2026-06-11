@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Unstuck — Focus</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#10141a">
 <script src="/assets/app.js"></script>
 <link rel="stylesheet" href="/assets/app.css">
 <style>
@@ -313,7 +316,7 @@
     convo.push({ role: "user", content: userText });
     setBusy(true);
     try {
-      const res = await fetch("/api/graph-step", {
+      const res = await Unstuck.api("/api/graph-step", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ messages: convo }),

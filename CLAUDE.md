@@ -36,7 +36,12 @@ witness, Trail, Phase 1 Focus integration)
   PUT `/api/graph` (replace: migration/samples/clear), GET `/api/events`
   (SSE live-sync), POST `/api/graph-step` (Claude proxy; builds the
   model's day-precision snapshot from the server graph). The graph
-  system prompt and operations schema live here.
+  system prompt and operations schema live here. Env: `UNSTUCK_TOKEN`
+  (optional shared secret gating /api/*), `UNSTUCK_DATA` (data dir
+  override — ALWAYS use this + an alt port for tests; the default
+  data/ holds the user's real map), `PORT`.
+- `docs/DEPLOY.md` — Phase 3 deploy guide (Tailscale / VPS / fly.io)
+  + the env var table. `Dockerfile` at repo root (no install step).
 - `public/index.html` — the Map: Cytoscape.js graph canvas + chat panel.
   The main editing surface; every edit goes to the server as an op.
   (localStorage keeps only the chat history and theme; the old

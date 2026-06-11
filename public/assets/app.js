@@ -38,8 +38,28 @@
   // localStorage's old unstuck.graph is read once as a migration source.
   const clientId = Math.random().toString(36).slice(2, 10);
 
+  // Deployed servers may require a shared token (Phase 3 / UNSTUCK_TOKEN).
+  // On 401 we ask once, remember it, and retry.
+  let token = localStorage.getItem("unstuck.token") || "";
+
+  async function api(path, opts = {}) {
+    opts.headers = Object.assign({}, opts.headers,
+      token ? { "x-unstuck-token": token } : {});
+    let res = await fetch(path, opts);
+    if (res.status === 401) {
+      const t = prompt("This Unstuck server asks for its access token:");
+      if (t && t.trim()) {
+        token = t.trim();
+        localStorage.setItem("unstuck.token", token);
+        opts.headers["x-unstuck-token"] = token;
+        res = await fetch(path, opts);
+      }
+    }
+    return res;
+  }
+
   async function replaceGraph(elements) {
-    await fetch("/api/graph", {
+    await api("/api/graph", {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ elements, client: clientId }),
@@ -47,7 +67,7 @@
   }
 
   async function loadGraph() {
-    const res = await fetch("/api/graph");
+    const res = await api("/api/graph");
     if (!res.ok) throw new Error("couldn't load the graph from the server");
     let elements = (await res.json()).elements || [];
     if (!elements.length && !localStorage.getItem("unstuck.migrated")) {
@@ -58,33 +78,45 @@
       }
     }
     localStorage.setItem("unstuck.migrated", "1");
+    graphReady = true;
+    connectEvents();
     return elements;
   }
 
   async function sendOps(ops) {
     if (!ops || !ops.length) return;
-    await fetch("/api/ops", {
+    await api("/api/ops", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ ops, client: clientId }),
     });
   }
 
-  // SSE: fires for changes made by OTHER clients (own ops are applied locally)
-  function onGraphChange(fn) {
-    const es = new EventSource("/api/events");
+  // SSE: fires for changes made by OTHER clients (own ops are applied
+  // locally). EventSource can't send headers, so the token rides the query
+  // string; we connect only after the first authorized load so the token
+  // prompt (if any) has already happened.
+  const changeFns = [];
+  let es = null, graphReady = false;
+  function connectEvents() {
+    if (es || !changeFns.length || !graphReady) return;
+    es = new EventSource("/api/events" + (token ? "?token=" + encodeURIComponent(token) : ""));
     es.onmessage = (e) => {
       const ev = JSON.parse(e.data);
-      if (ev.type !== "hello" && ev.client !== clientId) fn(ev);
+      if (ev.type !== "hello" && ev.client !== clientId)
+        for (const fn of changeFns) fn(ev);
     };
-    return es;
+  }
+  function onGraphChange(fn) {
+    changeFns.push(fn);
+    connectEvents();
   }
 
   window.Unstuck = {
     get theme() { return theme; },
     palette: () => PALETTES[theme],
     onThemeChange: (fn) => listeners.push(fn),
-    clientId, loadGraph, sendOps, replaceGraph, onGraphChange,
+    clientId, api, loadGraph, sendOps, replaceGraph, onGraphChange,
   };
 
   const NAV = [

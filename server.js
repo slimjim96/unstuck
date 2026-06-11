@@ -12,6 +12,17 @@ const path = require("node:path");
 const PORT = process.env.PORT || 3456;
 const PUBLIC_DIR = path.join(__dirname, "public");
 
+// Optional shared-secret gate for when the server leaves localhost
+// (personal-tool model: one token, set UNSTUCK_TOKEN in the environment).
+// Static pages stay open — all data lives behind /api/*.
+const TOKEN = process.env.UNSTUCK_TOKEN || "";
+function authorized(req) {
+  if (!TOKEN) return true;
+  if (req.headers["x-unstuck-token"] === TOKEN) return true;
+  // EventSource can't set headers — allow the token as a query param there
+  return new URL(req.url, "http://localhost").searchParams.get("token") === TOKEN;
+}
+
 // ---- canonical graph store -------------------------------------------------
 // Shape: cytoscape element JSON ({ group, data, position }) — exactly what
 // the lenses render, positions included (the user's arrangement is truth).
@@ -224,7 +235,8 @@ function serveStatic(req, res) {
     res.writeHead(404).end("not found");
     return;
   }
-  const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css" };
+  const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css",
+                  ".json": "application/json", ".svg": "image/svg+xml" };
   res.writeHead(200, { "content-type": types[path.extname(filePath)] || "application/octet-stream" });
   fs.createReadStream(filePath).pipe(res);
 }
@@ -248,6 +260,11 @@ function json(res, code, body) {
 
 const server = http.createServer(async (req, res) => {
   const url = req.url.split("?")[0];
+
+  if (url.startsWith("/api/") && !authorized(req)) {
+    json(res, 401, { error: "access token required" });
+    return;
+  }
 
   if (req.method === "GET" && url === "/api/graph") {
     json(res, 200, { rev: graph.rev, elements: graph.elements });

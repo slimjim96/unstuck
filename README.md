@@ -132,11 +132,14 @@ Kept on purpose: no build step, pinned CDN libraries, zero-dep server,
 and the keystone — the graph is the single source of truth, every view
 is a projection.
 
-**Status:** Phases 1 and 2 shipped (2026-06-10). The server owns the
-graph in `data/` (gitignored); every client speaks ops; lenses sync
-live over SSE across tabs *and* devices; the old localStorage graph
-migrates up automatically on first load. Remaining: Phase 3 (deploy,
-phone, PWA).
+**Status:** Phases 1–3 shipped (2026-06-11). The server owns the graph
+in `data/` (gitignored); every client speaks ops; lenses sync live over
+SSE across tabs *and* devices; old localStorage graphs migrate up
+automatically. Phase 3 deploy kit: optional `UNSTUCK_TOKEN` shared
+secret on `/api/*` (browser asks once and remembers), PWA manifest
+(installs to a phone home screen, Focus as start screen), responsive
+Map, Dockerfile — see [docs/DEPLOY.md](docs/DEPLOY.md) for the three
+hosting paths. What remains is picking one and running it.
 
 ## Prototype Scope (v0)
 

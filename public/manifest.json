@@ -1,0 +1,12 @@
+{
+  "name": "Unstuck",
+  "short_name": "Unstuck",
+  "description": "A decomposition engine for stuck things — one tiny step at a time.",
+  "start_url": "/focus.html",
+  "display": "standalone",
+  "background_color": "#10141a",
+  "theme_color": "#10141a",
+  "icons": [
+    { "src": "/assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

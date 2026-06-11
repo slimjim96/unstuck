@@ -317,6 +317,9 @@ const server = http.createServer(async (req, res) => {
       "content-type": "text/event-stream",
       "cache-control": "no-cache",
       "connection": "keep-alive",
+      // nginx-style reverse proxies (shared hosting, Passenger) buffer
+      // responses unless told not to — that would stall live-sync
+      "x-accel-buffering": "no",
     });
     res.write("data: " + JSON.stringify({ type: "hello", rev: graph.rev }) + "\n\n");
     sseClients.add(res);

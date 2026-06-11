@@ -4,7 +4,30 @@
 
 ---
 
-## HANDOFF — next session starts here (updated 2026-06-10, Phase 2 done)
+## HANDOFF — next session starts here (updated 2026-06-11, Phase 3 kit done)
+
+**State:** all committed and pushed on `claude/feat/3d-lens`. The
+user's REAL map lives in `data/` (gitignored) — tests must always use
+`UNSTUCK_DATA=<temp>` + an alternate PORT. No servers left running.
+
+**Phase 3 kit shipped (2026-06-11):** optional `UNSTUCK_TOKEN` gate on
+/api/* (header or ?token= for SSE; browser prompts once on 401 and
+remembers in localStorage), PWA manifest + SVG icon (standalone,
+start_url = /focus.html), responsive Map (panel = bottom sheet ≤720px),
+Dockerfile, docs/DEPLOY.md (Tailscale / VPS / fly.io). What remains of
+Phase 3 is EXECUTION: the user picks a hosting path and we run it
+together (their accounts/infra needed).
+
+**Candidate next work:** deploy execution; witness reading real op
+history from events.ndjson; ops-log compaction; Map refit after phone
+rotation (dbl-tap canvas already does it manually); consider PR
+claude/feat/3d-lens → main (branch now holds ~20 commits of work).
+
+**Still pending (user):** API key rotation, since 2026-06-09.
+
+---
+
+## (superseded) HANDOFF of 2026-06-10 — Phase 2 done
 
 **State:** everything committed and pushed on `claude/feat/3d-lens`.
 Working tree clean. No server left running; `data/` deliberately empty
@@ -35,6 +58,46 @@ write wins (fine for one person). Focus model-reply vs picker mismatch
 verification bar; auto-answer JS dialogs in CDP drivers. Check the
 3456 port owner before starting servers. **API key rotation still
 pending (user, since 2026-06-09).**
+
+---
+
+## 2026-06-11 (later 2) — Phase 3 kit: token, PWA, phone, deploy guide
+
+**Branch:** `claude/feat/3d-lens`
+
+### What was done
+- UNSTUCK_TOKEN gate (server): when set, /api/* requires the token —
+  `x-unstuck-token` header, or `?token=` for EventSource (can't send
+  headers). Unset = open (localhost daily use, zero friction). Static
+  pages stay open; all data is behind /api.
+- Client (app.js): Unstuck.api() wrapper — on 401, prompt() once,
+  store in localStorage (unstuck.token), retry. SSE connects lazily
+  after the first authorized load so the prompt has already happened.
+  Map/Focus graph-step calls + Map's SSE refetch go through api().
+- PWA: public/manifest.json (standalone, start_url /focus.html — the
+  phone is the "show me my one step" surface), assets/icon.svg, links
+  + theme-color on all five pages; .json/.svg content types added.
+- Responsive Map: ≤720px → column layout, panel as 46vh bottom sheet,
+  legend hidden. Focus/Trail/Timeline already fine.
+- Dockerfile (node:22-alpine, COPY only — zero deps, no install) and
+  docs/DEPLOY.md: Tailscale (recommended), VPS + systemd + Caddy,
+  fly.io + volume; env table (ANTHROPIC_API_KEY, UNSTUCK_TOKEN,
+  UNSTUCK_DATA, PORT); data is two files, moving = copying data/.
+
+### Verification (isolated server: PORT 3457 + UNSTUCK_DATA temp)
+- 15/15: 401 without/wrong token, 200 with header, SSE 401 vs ?token
+  stream, manifest+icon content types and installable shape, static
+  open without token; in-browser: prompt appeared once → graph loaded
+  → token remembered; SSE with token delivered another client's op
+  live; phone (390×844 emulation): panel stacked below canvas
+  (screenshots: map-phone, focus-phone — Focus is a perfect phone
+  surface). Real data/ verified intact (rev 2, 26 elements).
+
+### Open items / next steps
+- Deploy EXECUTION with the user (needs their accounts): pick
+  Tailscale / VPS / fly.io per docs/DEPLOY.md.
+- Phone rotation refit is manual (dbl-tap canvas) — fine for now.
+- API key rotation still pending.
 
 ---
 

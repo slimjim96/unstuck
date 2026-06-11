@@ -18,10 +18,18 @@ Dockerfile, docs/DEPLOY.md (Tailscale / VPS / fly.io). What remains of
 Phase 3 is EXECUTION: the user picks a hosting path and we run it
 together (their accounts/infra needed).
 
-**Candidate next work:** deploy execution; witness reading real op
-history from events.ndjson; ops-log compaction; Map refit after phone
-rotation (dbl-tap canvas already does it manually); consider PR
-claude/feat/3d-lens → main (branch now holds ~20 commits of work).
+**Hosting decision (user, 2026-06-11): local LAN first, then a
+Linux/CentOS box (possibly shared hosting).** DEPLOY.md reordered
+accordingly: Option A = home LAN (the user still needs to run the
+elevated New-NetFirewallRule command — port 3456, Private profile;
+their Wi-Fi IP was 10.27.17.33, suggest a DHCP reservation), Option C
+= CentOS (dnf, firewalld, SELinux) + cPanel/Passenger shared-hosting
+subsection. SSE now sends x-accel-buffering: no for proxy buffering.
+
+**Candidate next work:** CentOS deploy execution when the user has the
+host; witness reading real op history from events.ndjson; ops-log
+compaction; Map refit after phone rotation (dbl-tap canvas does it
+manually); consider PR claude/feat/3d-lens → main (~20 commits).
 
 **Still pending (user):** API key rotation, since 2026-06-09.
 
